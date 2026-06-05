@@ -64,6 +64,12 @@ def calculate(params: dict) -> dict:
     obvod_t = params.get("obvod_tloustka_mm")
     z_koty = bool(params.get("tloustka_z_koty"))   # je hrúbka daná VÝSLOVNOU kótou?
     zatepl = bool(params.get("ma_zateplenie"))     # stena = murivo + zateplenie?
+    # SKLADANÁ STENA (deterministické pravidlo): zateplenie + veľká hrúbka (>375 mm) =
+    # murivo + izolácia. Murivo je NORMÁLNY blok (~300), NIE 450mm jednovrstvý tepelný
+    # blok → nesmie sa cenť 450 ani auto-vybrať trieda Dražší. (Tepelný blok nemá
+    # samostatné zateplenie — tieto dve veci si protirečia.)
+    if zatepl and obvod_t and float(obvod_t) > 375:
+        obvod_t = 300
     # auto-výber triedy z hrúbky LEN ak je hrúbka spoľahlivá (z kóty)
     tier_key, tier_auto = _tier_key(params.get("tier") or params.get("system"),
                                     obvod_t if z_koty else None)
