@@ -20,8 +20,14 @@ ENTRANCE_DOOR_M2 = 2.0
 INTERIOR_DOOR_M2 = 1.6
 
 # priečky sa nedajú spoľahlivo zmerať ani najlepším modelom (kóty na ne chýbajú)
-# (zmiernené z 0,27 → 0,18, aby celkový ±band nebol prehnane široký; priečky sú menšia časť ceny)
 PRICKY_INHERENT_UNC = 0.18
+
+# inherentná neistota AI ČÍTANIA pôdorysu — aj pri vysokej confidence model varíruje
+# a môže nezachytiť časť stien. Bez tohto by ±band falošne predstieral presnosť (~±9 %).
+READING_BASE_UNC = 0.10
+# keď zdivo vyjde NÍZKY podiel hrubej stavby → pravdepodobne nezachytené steny (garáž, nosné)
+LOW_SHARE_PCT = 25
+UNDERCOUNT_UP = 0.15   # asymetrické rozšírenie HORE (reálne môže byť vyššie)
 
 # Cross-check: priamy trhový benchmark hrubej stavby (Kč/m² podlahy) — viď cihly.json
 
@@ -156,9 +162,9 @@ def calculate(params: dict) -> dict:
     zdivo_total = material_total + labor
 
     # ===== ±BAND: nezávislé zdroje neistoty v KVADRATÚRE =====
-    # a) čítanie výkresu (confidence + prípadný Opus rozpor)
+    # a) čítanie výkresu: inherentná neistota AI + (chýbajúca) confidence + Opus rozpor
     model_unc = float(params.get("model_uncertainty") or 0)
-    u_read = (100 - conf) / 250.0 + model_unc * 0.7
+    u_read = READING_BASE_UNC + (100 - conf) / 250.0 + model_unc * 0.7
     # b) neredukovateľná neistota DĹŽKY priečok (úmerne ich cenovému podielu)
     pricky_cost = pricky_mat + round(pricky_net * labor_pricky_m2)
     u_pricky = PRICKY_INHERENT_UNC * (pricky_cost / zdivo_total if zdivo_total else 0)
@@ -174,9 +180,8 @@ def calculate(params: dict) -> dict:
     # d) regionálny rozptyl (Praha/Brno +10-20 %, práca, metodika)
     u_region = _CFG["regionalna_neistota"]
 
-    band = min(0.40, max(0.06, math.sqrt(u_read**2 + u_pricky**2 + u_tier**2 + u_region**2)))
-    lo = round(zdivo_total * (1 - band))
-    hi = round(zdivo_total * (1 + band))
+    band = min(0.45, max(0.08, math.sqrt(u_read**2 + u_pricky**2 + u_tier**2 + u_region**2)))
+    up_extra = 0.0   # asymetrické rozšírenie hore (nastaví sa pri podozrení na nezachytené steny)
 
     # ===== Sanity check geometrie =====
     warnings = []
@@ -225,6 +230,16 @@ def calculate(params: dict) -> dict:
         if podiel and podiel > 55:
             warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne 30–45 %). Over hrúbku a triedu "
                             "— nie je v hrúbke započítané zateplenie? Nie je zvolená drahšia trieda než treba?")
+        elif podiel and podiel < LOW_SHARE_PCT:
+            up_extra = UNDERCOUNT_UP
+            warnings.append(f"⚠ Zdivo je len ~{podiel} % hrubej stavby (bežne 30–45 %) — pravdepodobne sa "
+                            "z výkresu nepodarilo prečítať všetky steny (napr. garáž alebo vnútorné nosné "
+                            "steny). Reálna cena môže byť VYŠŠIA — skontroluj/dorovnaj dĺžky stien nižšie.")
+
+    # finálne rozpätie: dole symetricky, hore prípadne širšie (riziko podčítania stien)
+    lo = round(zdivo_total * (1 - band))
+    hi = round(zdivo_total * (1 + band + up_extra))
+    band_pct = round((hi - lo) / (2 * zdivo_total) * 100) if zdivo_total else 0
 
     return {
         "tier": tier_key,
@@ -238,7 +253,7 @@ def calculate(params: dict) -> dict:
         "material_total": material_total,
         "labor_total": labor,
         "zdivo_total": zdivo_total,
-        "band_pct": round(band * 100),
+        "band_pct": band_pct,
         "range_lo": lo,
         "range_hi": hi,
         "band_zdroje": {"citanie": round(u_read, 3), "priecky": round(u_pricky, 3),
