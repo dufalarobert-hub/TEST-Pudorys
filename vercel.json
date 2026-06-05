@@ -1,11 +1,16 @@
 {
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 60,
-      "includeFiles": "{templates/**,cihly.json}"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxDuration": 60,
+        "includeFiles": ["templates/**", "cihly.json"]
+      }
     }
-  },
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" }
   ]
 }
