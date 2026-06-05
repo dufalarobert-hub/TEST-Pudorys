@@ -1,0 +1,16 @@
+# Do serverless funkcie netreba dev/test veci
+node_modules/
+package.json
+package-lock.json
+shot.js
+batch_test.py
+batch_ensemble.py
+gate_test.py
+threeway.py
+cv_walls.py
+scrapers/
+test_podorysy/
+uploads/
+prices.json
+*.md
+.DS_Store

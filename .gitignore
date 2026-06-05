@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node (len dev: puppeteer screenshoty)
+node_modules/
+
+# Runtime / temp
+uploads/
+*.log
+.DS_Store
+
+# Tajné / lokálne
+.env
+.env.local
+prices.json
+
+# Vercel
+.vercel

@@ -1,0 +1,32 @@
+{
+  "_comment": "Editovateľné ceny zdiva. Bez DPH. LEN ZDIVO (neobsahuje zateplenie/základy/stropy/strechu/omietky). Brand-agnostic. Materiál = kc_m3 × NAMERANÁ hrúbka muriva. Práca = base + per_mm × hrúbka (sadzba rastie s hrúbkou). rozsah_y kŕmia ±band.",
+  "verzia": "2026-06-05",
+  "zdroje": "Material retail 2025/26: dek.cz (cenníková -20% = realita), e-stavebniny.cz, stavebniny-levne.cz. Práca po hrúbkach: cenikyremesel.cz (2025/26, len práca). Věnec: 2 nezávislé dodávateľské cenníky. Inflácia 2022→2026 len ~+5% (vrchol bol 2022, ČSÚ). Validované aj proti reálnej Ytong ponuke (RD Jiráský 2022) + širokému trhu — NEoverfitované na jeden papier.",
+  "mena": "CZK",
+  "dph": false,
+
+  "_pozn_material": "kc_m3 podľa triedy (materiál), × hrúbka muriva → Kč/m² steny. DEK retail 2025/26: Ytong Standard 300=4615, Klasik 100=4609, Lambda YQ 375=4937 Kč/m³.",
+  "obvodove_tiery": {
+    "lacne":   {"popis": "Základní zdivo (levnější keramika / tenký pórobeton)", "kc_m3": 3600, "kc_m3_rozsah": [3100, 4100], "typ_hrubka_mm": 300, "_referencny_produkt": "základná Porotherm Profi / rozpočtová varianta"},
+    "stredne": {"popis": "Běžné zdivo (Ytong Standard, Porotherm Profi)",        "kc_m3": 4450, "kc_m3_rozsah": [4100, 4800], "typ_hrubka_mm": 300, "_referencny_produkt": "Ytong Standard 300 = 4615 Kč/m³ (DEK 2025/26)"},
+    "drahe":   {"popis": "Tepelněizolační blok (Ytong Lambda, Porotherm T)",      "kc_m3": 4800, "kc_m3_rozsah": [4200, 5500], "typ_hrubka_mm": 440, "_referencny_produkt": "Ytong Lambda YQ 375 = 4937 / Porotherm 44 T Profi (DEK 2025/26)"}
+  },
+
+  "priecky_tier": {"popis": "Vnútorné priečkovky", "kc_m3": 4650, "kc_m3_rozsah": [4100, 5000], "typ_hrubka_mm": 115, "_referencny_produkt": "Ytong Klasik 100 = 4609 / Porotherm 11,5 Profi = 4855 Kč/m³ (2025/26)"},
+
+  "_pozn_praca": "Práca (len zdenie, bez materiálu) Kč/m² = base + per_mm × hrúbka. Kalibrované na cenikyremesel.cz 2025/26: obvod 250mm≈490, 300≈545, 375≈627, 440≈699; priečky 100≈400, 150≈460.",
+  "praca_obvod":   {"base_kc_m2": 215, "per_mm": 1.10, "rozsah_mult": [0.85, 1.20]},
+  "praca_priecky": {"base_kc_m2": 280, "per_mm": 1.20, "rozsah_mult": [0.85, 1.20]},
+
+  "preklad_kc_otvor": 2200,
+  "_pozn_preklad": "Najhrubší odhad — silno závisí od šírky otvoru. Ytong U-profil ~1400-1800/otvor, Porotherm KP7 pri širokých oknách 4000-9000. 2200 = vážený stred (dom má viac úzkych dverí než širokých okien).",
+  "preklad_rozsah": [1200, 4500],
+  "venec_kc_m": 2200,
+  "venec_rozsah": [1800, 2600],
+  "vyska_podlazia_m": 2.8,
+  "regionalna_neistota": 0.05,
+  "_pozn_hruba": "Hrubá stavba (základy+zdivo+stropy+krov+strecha) ~15-23 tis. Kč/m² podlahy 2025/26 (= 40-50% ceny na kľúč 35-50k/m²; potvrdené aj spätne: naše overené zdivo ~30-45% z toho). Predtým 8-12k bol omyl (nízky outlier).",
+  "sanity_hruba_stavba_kc_m2": [15000, 23000],
+
+  "neobsahuje": "zateplenie, základy, stropy, strechu, omietky a vnútorné rozvody"
+}

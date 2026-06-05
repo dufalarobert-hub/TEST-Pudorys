@@ -1,0 +1,16 @@
+{
+  "name": "kalkulacka_rozpoctu",
+  "version": "1.0.0",
+  "description": "Nahráš půdorys RD → **Gemini** přečte obvodové zdivo, příčky a kóty → spočítá se **cena hrubého zdiva ±rozsah** + cross-check celé hrubé stavby. Volitelná **Claude** vrstva validuje a kalibruje výsledek.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer-core": "^25.1.0"
+  }
+}

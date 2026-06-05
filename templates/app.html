@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cihlomat · Rozpočet zdiva z půdorysu</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --brick:#c0492b;--brick2:#9c3a20;--ink:#211d1a;--mut:#8a7d70;
+    --cream:#f7f2ec;--paper:#fff;--line:#ece3d8;--green:#2e7d52;--gold:#b8860b;
+    --sh:0 1px 3px rgba(60,40,20,.06),0 8px 28px rgba(80,50,20,.07);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -200px,#fdf8f2,var(--cream));color:var(--ink);margin:0;line-height:1.5;overflow-x:hidden}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:30px}
+  .logo{font-size:22px;font-weight:800;letter-spacing:-.5px}
+  .logo .b{color:var(--brick)}
+  .tag{font-size:12px;color:var(--mut);background:#fff;border:1px solid var(--line);padding:4px 10px;border-radius:20px;margin-left:auto}
+  h1{font-size:32px;line-height:1.15;letter-spacing:-.8px;margin:0 0 8px;font-weight:800}
+  .lede{color:var(--mut);font-size:16px;margin:0 0 24px;max-width:540px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:16px;box-shadow:var(--sh)}
+  h3{margin:0 0 14px;font-size:16px;font-weight:700;letter-spacing:-.2px}
+
+  /* drop zone */
+  .drop{display:block;border:2.5px dashed #dcc9b4;border-radius:18px;padding:46px 24px;text-align:center;cursor:pointer;
+    transition:.18s;background:linear-gradient(#fffdfb,#fff9f3)}
+  .drop:hover,.drop.drag{border-color:var(--brick);background:#fff5ee;transform:translateY(-1px)}
+  .drop .ic{font-size:40px;line-height:1}
+  .drop .t1{font-size:17px;font-weight:600;margin-top:12px}
+  .drop .t1 b{color:var(--brick)}
+  .drop .t2{font-size:13px;color:var(--mut);margin-top:5px}
+  .drop.has{border-style:solid;border-color:var(--green);background:#f4fbf6}
+  .fname{color:var(--green);font-weight:600;margin-top:12px;font-size:15px}
+  .hints{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+  .hint{font-size:12.5px;color:#6f6357;background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:20px}
+  .hint b{color:var(--green)}
+
+  .btn{background:var(--brick);color:#fff;border:0;border-radius:13px;padding:14px 22px;font-weight:700;cursor:pointer;font-size:15.5px;transition:.15s;box-shadow:0 6px 16px rgba(192,73,43,.22)}
+  .btn:hover{background:var(--brick2);transform:translateY(-1px)}
+  .btn:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+  .btn.full{width:100%;margin-top:18px;font-size:16px}
+  .btn.ghost{background:#fff;color:var(--brick);border:1.5px solid var(--line);box-shadow:none}
+  .btn.ghost:hover{border-color:var(--brick);background:#fff7f3}
+
+  /* hero result */
+  .hero{background:linear-gradient(135deg,#c0492b,#8f3318);color:#fff;border:0;box-shadow:0 10px 34px rgba(140,50,20,.28);overflow:hidden;position:relative}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,.12),transparent 70%)}
+  .hero .lab{font-size:13.5px;opacity:.9;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hero .big{font-size:42px;font-weight:800;letter-spacing:-1.2px;margin:8px 0 2px}
+  .hero .rng{font-size:15px;opacity:.95}
+  .hero .rng b{font-weight:700}
+  .pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.16);padding:4px 11px;border-radius:20px;font-size:12.5px;font-weight:600}
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+
+  /* tier segmented */
+  .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+  .seg button{background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:12px 10px;cursor:pointer;text-align:center;transition:.15s;font-family:inherit}
+  .seg button:hover{border-color:#dcc9b4}
+  .seg button.on{border-color:var(--brick);background:#fff5ee;box-shadow:0 4px 12px rgba(192,73,43,.12)}
+  .seg .nm{font-weight:700;font-size:14px}
+  .seg .ds{font-size:11.5px;color:var(--mut);margin-top:3px;line-height:1.3}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px 6px;text-align:left;border-bottom:1px solid var(--line)}
+  td.n,th.n{text-align:right;white-space:nowrap}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:600}
+  tfoot td{font-weight:700;border-top:2px solid #e0d5c7;border-bottom:0;padding-top:12px}
+  .muted{color:var(--mut);font-size:13px}
+
+  /* cross-check bar */
+  .cc{background:linear-gradient(#f4faf6,#fff);border:1px solid #d3e8da}
+  .ccbig{font-size:26px;font-weight:800;letter-spacing:-.6px;margin:2px 0 2px}
+  .bar{height:13px;background:#e9efe9;border-radius:8px;overflow:hidden;margin:14px 0 6px;display:flex}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#c0492b,#9c3a20)}
+  .barleg{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px}
+  .grid label{font-size:12.5px;color:var(--mut);display:block;margin-bottom:4px;font-weight:500}
+  .grid input,.grid select{width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;background:#fff;transition:.15s}
+  .grid input:focus,.grid select:focus{outline:0;border-color:var(--brick)}
+  .conf{height:8px;background:#eee;border-radius:6px;overflow:hidden;margin-top:7px}
+  .conf>i{display:block;height:100%;border-radius:6px;transition:width .4s}
+  .chips span{display:inline-block;background:#f3ece2;border-radius:16px;padding:5px 11px;font-size:12px;margin:4px 5px 0 0;color:#6f6357}
+  .warn{background:#fff8ec;border:1px solid #f0deb6;color:#7a5a14;border-radius:13px;padding:14px 16px;margin-top:16px;font-size:13.5px}
+  .err{background:#fdecec;border:1px solid #f3b3b3;color:#9a2424;border-radius:13px;padding:15px 16px;margin-top:14px;font-size:14px}
+  .refuse{background:#fff6f3;border:1.5px solid #f0c9bb;color:#8a3a1f;border-radius:16px;padding:22px;margin-top:16px;text-align:center}
+  .refuse .ic{font-size:34px}.refuse h4{margin:8px 0 6px;font-size:17px;color:var(--brick)}
+  .claude{background:linear-gradient(#f6f3fc,#fff);border:1px solid #ddd2f0}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;margin-left:6px}
+  .badge.on{background:#e3f6ea;color:#1f7a44}.badge.off{background:#f1e6e6;color:#9a4a3a}
+  .spin{display:inline-block;width:16px;height:16px;border:3px solid #fff6;border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:28px}
+  @media(max-width:560px){
+    .wrap{padding:20px 13px 48px}
+    h1{font-size:25px}
+    .lede{font-size:14.5px}
+    .tag{display:none}
+    .hero .big{font-size:33px}
+    .ccbig{font-size:22px}
+    .seg{grid-template-columns:1fr;gap:7px}
+    .seg button{display:flex;align-items:center;gap:8px;text-align:left}
+    .seg .ds{margin-top:0}
+    table{font-size:13px}
+    th,td{padding:8px 4px}
+    .drop{padding:34px 16px}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef} = React;
+const fmt = n => (n==null?'—':Math.round(n).toLocaleString('cs-CZ').replace(/ /g,' '));
+const TIERS=[
+  {k:'lacne',nm:'Levné',ds:'pórobeton / tenčí'},
+  {k:'stredne',nm:'Střední',ds:'silnější keramika'},
+  {k:'drahe',nm:'Dražší',ds:'tepelněizolační'},
+];
+
+function App(){
+  const [file,setFile]=useState(null);
+  const [drag,setDrag]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState(null);
+  const [data,setData]=useState(null);
+  const [form,setForm]=useState(null);
+  const fileRef=useRef();
+
+  async function analyze(e){
+    e&&e.preventDefault();
+    if(!file){setError('Vyber prosím soubor.');return;}
+    setError(null);setLoading(true);setData(null);
+    try{
+      const fd=new FormData();fd.append('plan',file);
+      const r=await fetch('/api/analyze',{method:'POST',body:fd});
+      const j=await r.json();
+      if(!j.ok){setError(j.error||'Chyba.');setData(j.gate==='REFUSE'?{refuse:j.error}:null);}
+      else{setData(j);setForm({...j.params,vyska_podlazi_m:j.extraction.vyska_podlazi_m,tier:j.pricing.tier});}
+    }catch(err){setError(''+err);}
+    setLoading(false);
+  }
+  async function recalc(patch){
+    const f={...form,...patch};setForm(f);setLoading(true);
+    try{
+      const r=await fetch('/api/calculate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...f,confidence_0_100:90})});
+      const j=await r.json();
+      if(j.ok)setData(d=>({...d,pricing:j.pricing,params:j.params,recalced:true}));
+    }catch(err){setError(''+err);}
+    setLoading(false);
+  }
+  const applyClaude=()=>recalc(data.claude.suggestions||{});
+  const upd=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const reset=()=>{setFile(null);setData(null);setError(null);};
+  const showResult=data&&data.ok;
+
+  return <div className="wrap">
+    <div className="top">
+      <div className="logo"><span className="b">🧱</span> Cihlo<span className="b">mat</span></div>
+      <div className="tag">nezávislá kalkulačka · bez preference výrobce</div>
+    </div>
+
+    {!showResult ? <>
+      {!data && <>
+        <h1>Kolik stojí zdivo<br/>vašeho domu?</h1>
+        <p className="lede">Nahrajte půdorys s kótami a za pár vteřin dostanete orientační odhad
+          ceny obvodového zdiva a příček — materiál i práce, včetně rozpětí.</p>
+      </>}
+      <div className="card">
+        <form onSubmit={analyze}>
+          <label className={"drop"+(drag?" drag":"")+(file?" has":"")}
+            onDragOver={e=>{e.preventDefault();setDrag(true);}}
+            onDragLeave={()=>setDrag(false)}
+            onDrop={e=>{e.preventDefault();setDrag(false);setFile(e.dataTransfer.files[0]);}}>
+            <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{display:'none'}}
+              onChange={e=>setFile(e.target.files[0])}/>
+            <div className="ic">{file?'📑':'📐'}</div>
+            <div className="t1">{file?'Soubor připraven':<><b>Klikněte</b> nebo přetáhněte půdorys sem</>}</div>
+            <div className="t2">PDF, PNG nebo JPG · jedno podlaží</div>
+            {file && <div className="fname">✓ {file.name}</div>}
+          </label>
+          <div className="hints">
+            <div className="hint"><b>✓</b> s kótami (rozměry)</div>
+            <div className="hint"><b>✓</b> celý půdorys</div>
+            <div className="hint"><b>✓</b> čitelné stěny</div>
+          </div>
+          <button className="btn full" disabled={loading}>
+            {loading?<span><span className="spin"></span>Analyzuji půdorys…</span>:'Spočítat cenu zdiva →'}
+          </button>
+        </form>
+        {error && !(data&&data.refuse) && <div className="err">⚠️ {error}</div>}
+      </div>
+    </> : <div className="card" style={{display:'flex',alignItems:'center',gap:12,padding:'13px 18px'}}>
+      <span style={{fontSize:20}}>📑</span>
+      <span style={{fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{file?file.name:'Půdorys'}</span>
+      <button className="btn ghost" style={{marginLeft:'auto',padding:'9px 16px',fontSize:14}} onClick={reset}>Nahrát jiný</button>
+    </div>}
+
+    {data&&data.refuse && <div className="refuse">
+      <div className="ic">🔍</div>
+      <h4>Tento půdorys neumíme změřit</h4>
+      <p style={{margin:0,fontSize:14}}>{data.refuse}</p>
+      <button className="btn ghost" style={{marginTop:16}} onClick={()=>{setFile(null);setData(null);setError(null);}}>Zkusit jiný půdorys</button>
+    </div>}
+
+    {data&&data.ok && <Result data={data} form={form} upd={upd} recalc={recalc} loading={loading} applyClaude={applyClaude}/>}
+
+    <div className="foot">Orientační odhad hrubého zdiva · ceny bez DPH (retail 2025/26) · není závazná nabídka</div>
+  </div>;
+}
+
+function Result({data,form,upd,recalc,loading,applyClaude}){
+  const r=data.pricing, ex=data.extraction, cl=data.claude, cc=r.crosscheck;
+  const confColor=ex.confidence_0_100>=70?'#2e7d52':ex.confidence_0_100>=45?'#b8860b':'#c0492b';
+  return <div>
+    {data.gate==='WARN' && data.gate_msg &&
+      <div className="warn" style={{marginTop:16}}>ℹ️ {data.gate_msg}</div>}
+    {r.warnings && r.warnings.length>0 &&
+      <div className="warn" style={{marginTop:16}}>🚩 <b>Kontrola geometrie:</b>
+        <ul style={{margin:'8px 0 0',paddingLeft:20}}>{r.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>}
+
+    {/* HERO */}
+    <div className="card hero">
+      <div className="lab">🧱 Hrubé zdivo (materiál + práce) · {r.tier_popis}</div>
+      <div className="big">{fmt(r.zdivo_total)} Kč</div>
+      <div className="rng">reálné rozpětí <b>{fmt(r.range_lo)} – {fmt(r.range_hi)} Kč</b> <span style={{opacity:.8}}>(±{r.band_pct} %)</span></div>
+      <div className="pills">
+        <span className="pill">📐 {r.wall_area_total} m² stěn</span>
+        <span className="pill">bez zateplení</span>
+        {data.recalced && <span className="pill">✓ přepočítáno</span>}
+      </div>
+    </div>
+
+    {/* TIER SELECTOR */}
+    <div className="card">
+      <h3>Cenová třída zdiva</h3>
+      <div className="seg">
+        {TIERS.map(t=><button key={t.k} className={form.tier===t.k?'on':''} disabled={loading}
+          onClick={()=>recalc({tier:t.k})}>
+          <div className="nm">{t.nm}</div><div className="ds">{t.ds}</div></button>)}
+      </div>
+      {r.ma_zateplenie
+        ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Stěna obsahuje <b>zateplení</b> — počítáme <b>jen zdivo</b> (tloušťka zdiva ve výkazu níže), izolaci ne. Vyberte třídu odpovídající vašemu zdivu.</p>
+        : r.tier_auto && r.detected_thickness_mm
+        ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Třída navržena podle <b>tloušťky stěny {r.detected_thickness_mm} mm</b> z výkresu — můžete změnit. Mění se jen materiál, práce je u všech tříd stejná.</p>
+        : <p className="muted" style={{marginTop:10,marginBottom:0}}>ℹ️ Tloušťku stěny jsme na výkrese nenašli jako kótu — počítáme s <b>typickou tloušťkou třídy (odhad)</b>. Vyberte třídu odpovídající vašemu zdivu. Mění se jen materiál, práce je stejná.</p>}
+    </div>
+
+    {/* CROSS-CHECK */}
+    {cc && <div className="card cc">
+      <h3>🔎 Pro kontext — celá hrubá stavba</h3>
+      <div className="ccbig">{fmt(cc.min)} – {fmt(cc.max)} Kč</div>
+      <div className="muted">odhad pro ~{cc.plocha_m2} m² ({fmt(cc.unit_avg)} Kč/m² podlahy)</div>
+      <div className="bar"><i style={{width:Math.min(100,cc.zdivo_podiel_pct)+'%'}}></i></div>
+      <div className="barleg"><span>🧱 zdivo ~{cc.zdivo_podiel_pct} %</span><span>+ základy, stropy, střecha</span></div>
+      <p className="muted" style={{marginTop:12,marginBottom:0}}>{cc.note}</p>
+    </div>}
+
+    {/* VÝKAZ */}
+    <div className="card">
+      <h3>Výkaz výměr</h3>
+      <table><thead><tr><th>Položka</th><th className="n">Množ.</th><th className="n">Kč/j.</th><th className="n">Celkem</th></tr></thead>
+        <tbody>{r.items.map((i,k)=><tr key={k}>
+          <td>{i.name}<div className="muted">{i.detail}</div></td>
+          <td className="n">{i.qty} {i.unit}</td><td className="n">{fmt(i.price)}</td><td className="n">{fmt(i.total)}</td></tr>)}
+          <tr><td>{r.labor_item.name}<div className="muted">{r.labor_item.detail}</div></td>
+            <td className="n">{r.labor_item.qty} {r.labor_item.unit}</td><td className="n">{fmt(r.labor_item.price)}</td>
+            <td className="n">{fmt(r.labor_total)}</td></tr></tbody>
+        <tfoot><tr><td colSpan="3">Zdivo celkem (materiál + práce)</td><td className="n">{fmt(r.zdivo_total)} Kč</td></tr></tfoot>
+      </table>
+    </div>
+
+    {/* Co jsme vyčetli z výkresu */}
+    <div className="card">
+      <h3>📋 Co jsme z výkresu vyčetli</h3>
+      <p className="muted" style={{marginTop:0}}>Rozměry: <b>{ex.meritko_source}</b> · spolehlivost odhadu <b style={{color:confColor}}>{ex.confidence_0_100}/100</b></p>
+      <div className="conf"><i style={{width:ex.confidence_0_100+'%',background:confColor}}></i></div>
+      {ex.note && <p className="muted" style={{fontStyle:'italic',marginTop:8,marginBottom:6}}>„{ex.note}"</p>}
+      {ex.co_potvrdit&&ex.co_potvrdit.length>0 && <div><p className="muted" style={{marginTop:10,marginBottom:4}}>Doporučujeme ověřit:</p>
+        <div className="chips">{ex.co_potvrdit.map((c,i)=><span key={i}>{c}</span>)}</div></div>}
+    </div>
+
+    {/* EDIT */}
+    <div className="card">
+      <h3>📝 Upravit hodnoty a přepočítat</h3>
+      <div className="grid">
+        <F label="Obvodové zdivo (m)" k="obvod_m" form={form} upd={upd}/>
+        <F label="Vnitřní nosné stěny (m)" k="vnitrni_nosne_m" form={form} upd={upd}/>
+        <F label="Příčky (m)" k="pricky_m" form={form} upd={upd}/>
+        <F label="Výška podlaží (m)" k="vyska_podlazi_m" form={form} upd={upd}/>
+        <F label="Počet podlaží" k="pocet_podlazi" form={form} upd={upd}/>
+        <F label="Počet oken" k="pocet_oken" form={form} upd={upd}/>
+        <F label="Počet dveří" k="pocet_dveri" form={form} upd={upd}/>
+        <F label="Zastavěná plocha (m²)" k="zastavena_plocha_m2" form={form} upd={upd}/>
+        <F label="Užitná plocha (m²)" k="uzitna_plocha_m2" form={form} upd={upd}/>
+      </div>
+      <button className="btn" style={{marginTop:18}} disabled={loading} onClick={()=>recalc({})}>
+        {loading?'Počítám…':'Přepočítat'}</button>
+    </div>
+
+    <div className="warn">⚠️ Orientační odhad, ceny bez DPH (retail 2025/26). Zahrnuje obvodové zdivo, příčky,
+      překlady, věnec a práce. <b>Neobsahuje:</b> {r.neobsahuje}. Nezávislý odhad bez preference výrobce.
+      Před objednávkou ověřte s rozpočtářem.</div>
+  </div>;
+}
+
+const F=({label,k,form,upd})=><div><label>{label}</label>
+  <input type="number" step="any" value={form[k]??''} onChange={e=>upd(k,e.target.value===''?null:parseFloat(e.target.value))}/></div>;
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
