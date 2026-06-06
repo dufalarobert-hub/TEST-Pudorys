@@ -132,7 +132,7 @@ const TIERS=[
 ];
 
 function App(){
-  const [file,setFile]=useState(null);
+  const [files,setFiles]=useState([]);      // pole súborov: plan = 1 fotka/podlažie (viac možných), project = 1 PDF
   const [mode,setMode]=useState('plan');   // 'plan' = foto pôdorysu · 'project' = projektová dokumentácia
   const [drag,setDrag]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -143,10 +143,10 @@ function App(){
 
   async function analyze(e){
     e&&e.preventDefault();
-    if(!file){setError('Vyber prosím soubor.');return;}
+    if(!files.length){setError('Vyber prosím soubor.');return;}
     setError(null);setLoading(true);setData(null);
     try{
-      const fd=new FormData();fd.append('plan',file);
+      const fd=new FormData();files.forEach(f=>fd.append('plan',f));
       const r=await fetch('/api/analyze',{method:'POST',body:fd});
       const j=await r.json();
       if(!j.ok){setError(j.error||'Chyba.');setData(j.gate==='REFUSE'?{refuse:j.error}:null);}
@@ -165,8 +165,8 @@ function App(){
   }
   const applyClaude=()=>recalc(data.claude.suggestions||{});
   const upd=(k,v)=>setForm(f=>({...f,[k]:v}));
-  const reset=()=>{setFile(null);setData(null);setError(null);};
-  const setM=(m)=>{setMode(m);setFile(null);setError(null);};
+  const reset=()=>{setFiles([]);setData(null);setError(null);};
+  const setM=(m)=>{setMode(m);setFiles([]);setError(null);};
   const showResult=data&&data.ok;
 
   return <div className="wrap">
@@ -189,27 +189,38 @@ function App(){
             <small>celé PDF z projektu</small></button>
         </div>
         <form onSubmit={analyze}>
-          <label className={"drop"+(drag?" drag":"")+(file?" has":"")}
+          <label className={"drop"+(drag?" drag":"")+(files.length?" has":"")}
             onDragOver={e=>{e.preventDefault();setDrag(true);}}
             onDragLeave={()=>setDrag(false)}
-            onDrop={e=>{e.preventDefault();setDrag(false);setFile(e.dataTransfer.files[0]);}}>
-            <input ref={fileRef} type="file" accept={mode==='project'?'.pdf':'.pdf,.png,.jpg,.jpeg,.webp'} style={{display:'none'}}
-              onChange={e=>setFile(e.target.files[0])}/>
-            <div className="ic">{file?'📑':(mode==='project'?'📁':'📐')}</div>
-            <div className="t1">{file?'Soubor připraven':(mode==='project'
-              ? <><b>Klikněte</b> nebo přetáhněte projektovou dokumentaci</>
-              : <><b>Klikněte</b> nebo přetáhněte půdorys sem</>)}</div>
-            <div className="t2">{mode==='project'?'PDF z projektu — najdeme v něm půdorys 1.NP':'Foto, sken nebo 1 strana · PDF, PNG, JPG'}</div>
-            {file && <div className="fname">✓ {file.name}</div>}
+            onDrop={e=>{e.preventDefault();setDrag(false);
+              const dropped=[...e.dataTransfer.files];
+              setFiles(mode==='project'?dropped.slice(0,1):dropped);}}>
+            <input ref={fileRef} type="file" multiple={mode==='plan'}
+              accept={mode==='project'?'.pdf':'.pdf,.png,.jpg,.jpeg,.webp'} style={{display:'none'}}
+              onChange={e=>{const sel=[...e.target.files];setFiles(mode==='project'?sel.slice(0,1):sel);}}/>
+            <div className="ic">{files.length?'📑':(mode==='project'?'📁':'📐')}</div>
+            <div className="t1">{files.length
+              ? (files.length>1?files.length+' podlaží připraveno':'Soubor připraven')
+              : (mode==='project'
+                ? <><b>Klikněte</b> nebo přetáhněte projektovou dokumentaci</>
+                : <><b>Klikněte</b> nebo přetáhněte půdorys sem</>)}</div>
+            <div className="t2">{mode==='project'?'PDF z projektu — najdeme v něm půdorys 1.NP':'Foto / sken · můžete nahrát víc podlaží (1 fotka = 1 podlaží)'}</div>
+            {files.length>0 && <div className="fname">
+              {files.map((f,i)=><div key={i}>✓ {mode==='plan'&&files.length>1?('Podlaží '+(i+1)+': '):''}{f.name}</div>)}</div>}
           </label>
           {mode==='project'
             ? <p className="muted" style={{textAlign:'center',marginTop:14,marginBottom:0,fontSize:13}}>
                 V dokumentaci najdeme půdorys přízemí a spočítáme z něj. Z celého projektu umíme přesnější odhad.</p>
-            : <div className="hints">
-                <div className="hint"><b>✓</b> s kótami (rozměry)</div>
-                <div className="hint"><b>✓</b> celý půdorys</div>
-                <div className="hint"><b>✓</b> čitelné stěny</div>
-              </div>}
+            : <>
+                <div className="hints">
+                  <div className="hint"><b>✓</b> s kótami (rozměry)</div>
+                  <div className="hint"><b>✓</b> celý půdorys</div>
+                  <div className="hint"><b>✓</b> čitelné stěny</div>
+                </div>
+                <p className="muted" style={{textAlign:'center',marginTop:10,marginBottom:0,fontSize:13}}>
+                  🏠 Patrový dům? Nahrajte fotku <b>každého podlaží</b> — změříme je zvlášť a sečteme
+                  (přesnější než odhad horního patra).</p>
+              </>}
           <button className="btn full" disabled={loading}>
             {loading?<span><span className="spin"></span>{mode==='project'?'Hledám půdorys v dokumentaci…':'Analyzuji půdorys…'}</span>
               :(mode==='project'?'Najít půdorys a spočítat →':'Spočítat cenu zdiva →')}
@@ -245,9 +256,15 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
   const r=data.pricing, ex=data.extraction, cl=data.claude, cc=r.crosscheck;
   const confColor=ex.confidence_0_100>=70?'#2e7d52':ex.confidence_0_100>=45?'#b8860b':'#c0492b';
   return <div>
-    {ex._from_project &&
+    {ex._from_project && !data.multifloor &&
       <div className="warn" style={{marginTop:16,background:'#f2f7f3',borderColor:'#cfe6d6',color:'#2e5d44'}}>
         📁 Z vaší projektové dokumentace ({ex._pages_total} stran) jsme našli a použili <b>stranu {ex._page_idx+1}</b> (půdorys).</div>}
+    {data.multifloor && data.floors &&
+      <div className="warn" style={{marginTop:16,background:'#f2f7f3',borderColor:'#cfe6d6',color:'#2e5d44'}}>
+        🏠 Spočítáno z <b>{data.floors.length} podlaží</b> — každé změřeno zvlášť a sečteno (bez odhadu horního patra):{' '}
+        {data.floors.map(fl=>`${fl.label} ~${Math.round(fl.obvod_m)} m obvod`).join(' · ')}.
+        {data.skipped && data.skipped.length>0 &&
+          <div style={{marginTop:6}}>⚠️ Nepoužité: {data.skipped.map(s=>s.podlazi).join(', ')} — nešlo spolehlivě změřit.</div>}</div>}
     {data.gate==='WARN' && data.gate_msg &&
       <div className="warn" style={{marginTop:16}}>ℹ️ {data.gate_msg}</div>}
     {r.warnings && r.warnings.length>0 &&

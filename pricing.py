@@ -258,15 +258,20 @@ def calculate(params: dict) -> dict:
     geom_ratio = None
     # POZOR: úžitná aj zastavaná sú plochy JEDNÉHO podlažia (úžitná = súčet miestností 1.NP) →
     # pre CELÚ budovu (konzistentne so zdivom, ktoré je × podlazi) ich treba vynásobiť podlažiami.
+    # Pri multi-fóto (každé podlažie samostatná fotka) je obvod aj plocha už SÚČET za n podlaží.
+    floors_summed = int(params.get("_floors_summed") or 1)
     plocha_celk = (float(zast) * podlazi) if zast else (float(uzit) * podlazi if uzit else None)
     if plocha_celk and obvod_m:
-        plocha_1np = plocha_celk / podlazi
-        geom_ratio = obvod_m / (4 * math.sqrt(plocha_1np)) if plocha_1np > 0 else None
+        # normalizuj na JEDNO podlažie: pri multi-fóto vydeľ súčtom podlaží, inak ×podlazi rieši podlazi
+        n_div = floors_summed if floors_summed > 1 else podlazi
+        plocha_1np = plocha_celk / n_div
+        obvod_1np = obvod_m / floors_summed if floors_summed > 1 else obvod_m
+        geom_ratio = obvod_1np / (4 * math.sqrt(plocha_1np)) if plocha_1np > 0 else None
         if geom_ratio and geom_ratio > 1.5:
-            warnings.append(f"Obvod {obvod_m:.0f} m je vysoký na plochu ~{plocha_1np:.0f} m² "
+            warnings.append(f"Obvod {obvod_1np:.0f} m je vysoký na plochu ~{plocha_1np:.0f} m² "
                             f"(pomer {geom_ratio:.2f}). Over, či AI nezdvojnásobila obvod / dom je členitý.")
         elif geom_ratio and geom_ratio < 0.7:
-            warnings.append(f"Obvod {obvod_m:.0f} m je nízky na plochu ~{plocha_1np:.0f} m² "
+            warnings.append(f"Obvod {obvod_1np:.0f} m je nízky na plochu ~{plocha_1np:.0f} m² "
                             f"(pomer {geom_ratio:.2f}). Over, či AI prečítala celý obrys.")
     if pricky_m and obvod_m and pricky_m > obvod_m * 1.5:
         warnings.append("Dĺžka priečok je nezvyčajne vysoká voči obvodu — over odhad priečok.")
@@ -275,13 +280,17 @@ def calculate(params: dict) -> dict:
                         f"({pricky_geom:.0f} m) sa výrazne líšia — počítam priemer, ale over dĺžku priečok.")
 
     # počet podlaží sa z jedného pôdorysu 1.NP NEDÁ spoľahlivo zistiť → tichý default 1 = až 2× chyba ceny.
-    if podlazi <= 1:
+    # Pri multi-fóto (floors_summed>1) sme každé podlažie reálne zmerali → žiadne podlažné varovanie.
+    if floors_summed > 1:
+        pass  # reálne zmerané podlažia, info ukáže frontend (floors_summed)
+    elif podlazi <= 1:
         if params.get("ma_schodiste"):
             warnings.append("Na výkrese je SCHODIŠTĚ → dům má pravděpodobně víc podlaží, ale počítáme "
-                            "s 1. Nastavte počet podlaží — cena zdiva se násobí počtem podlaží.")
+                            "s 1. Nastavte počet podlaží (nebo nahrajte fotku každého podlaží) — cena "
+                            "zdiva se násobí počtem podlaží.")
         else:
             warnings.append("Počítáme s 1 nadzemním podlažím. Má dům patro nebo obytné podkroví? "
-                            "Upravte počet podlaží níže — cena zdiva se počtem podlaží násobí.")
+                            "Upravte počet podlaží níže (nebo nahrajte fotku každého podlaží).")
     else:
         warnings.append(f"Počítáme {podlazi} podlaží, ale analyzovali jsme jen JEDEN půdorys (1.NP). "
                         "Vyšší podlaží odhadujeme jako kopii přízemí — pokud se liší (menší patro, "
@@ -365,6 +374,7 @@ def calculate(params: dict) -> dict:
         "pricky_zdroj": pricky_zdroj,
         "pricky_ai_m": round(pricky_ai, 1),
         "pricky_geom_m": pricky_geom,
+        "floors_summed": floors_summed,
         "warnings": warnings,
         "crosscheck": crosscheck,
         "wall_area_total": round(wall_area_total),
@@ -378,6 +388,7 @@ def calculate(params: dict) -> dict:
             "obvod_material_trieda": legend_tier, "obvod_material": params.get("obvod_material"),
             "zdivo_zdroj": params.get("zdivo_zdroj"),
             "uzitna_plocha_m2": uzit, "zastavena_plocha_m2": zast,
+            "plochy_mistnosti_m2": rooms, "_floors_summed": floors_summed,
             "model_uncertainty": model_unc,
         },
     }

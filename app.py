@@ -36,13 +36,108 @@ def index():
     return resp
 
 
+MAX_FLOORS = 5   # rozumný strop pre multi-fóto (počet podlaží)
+
+
+def _save_upload(f):
+    """Ulož nahraný súbor do UPLOAD_DIR; vráti (cesta, ext) alebo (None, ext) pri zlom formáte."""
+    ext = "." + f.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ALLOWED:
+        return None, ext
+    path = config.UPLOAD_DIR / f"{uuid.uuid4().hex}{ext}"
+    f.save(path)
+    return str(path), ext
+
+
+def _aggregate_floors(floors):
+    """Viac pôdorysov (1 = jedno podlažie) → SÚČET reálnej geometrie do jedného celku
+    s pocet_podlazi=1 + _floors_summed=n (žiadne hádanie horného poschodia)."""
+    n = len(floors)
+    base = max(floors, key=lambda fl: int(fl.get("confidence_0_100") or 0))  # materiál/trieda z najistejšieho
+    rooms = []
+    for fl in floors:
+        rooms += list(fl.get("plochy_mistnosti_m2") or [])
+
+    def s(k):
+        return sum(float(fl.get(k) or 0) for fl in floors)
+
+    agg = dict(base)
+    agg.update({
+        "obvod_m": round(s("obvod_m"), 1),
+        "vnitrni_nosne_m": round(s("vnitrni_nosne_m"), 1),
+        "pricky_m": round(s("pricky_m"), 1),
+        "pocet_oken": int(s("pocet_oken")),
+        "pocet_dveri": int(s("pocet_dveri")),
+        "uzitna_plocha_m2": round(s("uzitna_plocha_m2"), 1) or None,
+        "zastavena_plocha_m2": None,        # cross-check ide z úžitnej (súčet podlaží); footprint by mátol
+        "plochy_mistnosti_m2": rooms,
+        "pocet_podlazi": 1,                 # už SÚČET reálnych podlaží → nenásobiť
+        "_floors_summed": n,
+        "confidence_0_100": min(int(fl.get("confidence_0_100") or 0) for fl in floors),  # najslabší článok
+        "ma_zateplenie": any(fl.get("ma_zateplenie") for fl in floors),
+        "ma_schodiste": False,
+    })
+    return agg
+
+
+def _analyze_multifloor(files):
+    """Multi-fóto: každý súbor = jedno podlažie. Zmeraj zvlášť, sčítaj, naceň."""
+    floors, skipped = [], []
+    for i, f in enumerate(files):
+        label = f"Podlažie {i + 1}"
+        path, ext = _save_upload(f)
+        if not path:
+            skipped.append({"podlazi": label, "reason": f"Nepodporovaný formát {ext}."})
+            continue
+        try:
+            ex = extract.extract_from_plan(path)
+        except Exception as e:  # noqa: BLE001
+            traceback.print_exc()
+            skipped.append({"podlazi": label, "reason": f"Extrakcia zlyhala: {e}"})
+            continue
+        dec, msg = reconcile.quality_gate(ex)
+        if dec == "REFUSE":
+            skipped.append({"podlazi": label, "reason": msg})
+            continue
+        ex["_floor_label"] = label
+        floors.append(ex)
+
+    if not floors:
+        return jsonify({"ok": False, "gate": "REFUSE", "skipped": skipped,
+                        "error": "Z nahraných pôdorysov sme nezmerali ani jeden. "
+                                 + (skipped[0]["reason"] if skipped else "")}), 200
+
+    agg = _aggregate_floors(floors)
+    result = pricing.calculate(agg)
+    # INTEGRACE (cihlomat): lead-capture rovnako ako pri single (result + _from_project).
+    return jsonify({
+        "ok": True, "gate": "ACCEPT", "gate_msg": None, "multifloor": True,
+        "extraction": agg,
+        "floors": [{"label": fl["_floor_label"], "obvod_m": fl.get("obvod_m"),
+                    "pricky_m": fl.get("pricky_m"), "uzitna_plocha_m2": fl.get("uzitna_plocha_m2"),
+                    "confidence_0_100": fl.get("confidence_0_100")} for fl in floors],
+        "skipped": skipped,
+        "vision": {"available": False, "reason": "multifloor", "escalated": False},
+        "claude": {"available": False, "reason": "multifloor"},
+        "reconcile": None,
+        "pricing": result, "params": result["used_params"],
+    })
+
+
 @app.route("/api/analyze", methods=["POST"])
 def api_analyze():
     # INTEGRACE (cihlomat): zde přidat rate-limit / auth — veřejné API volá metrovaný
     # Gemini, na produkci chraň proti zneužití (IP/den, token, …).
-    f = request.files.get("plan")
-    if not f or not f.filename:
+    files = [f for f in request.files.getlist("plan") if f and f.filename]
+    if not files:
         return jsonify({"ok": False, "error": "Nahraj prosím pôdorys (PDF/PNG/JPG)."}), 400
+    if len(files) > MAX_FLOORS:
+        return jsonify({"ok": False, "error": f"Naraz max {MAX_FLOORS} podlaží."}), 400
+    if len(files) > 1:
+        return _analyze_multifloor(files)
+
+    # ===== JEDEN súbor: pôvodný flow (Claude review + Opus eskalácia) =====
+    f = files[0]
     ext = "." + f.filename.rsplit(".", 1)[-1].lower()
     if ext not in ALLOWED:
         return jsonify({"ok": False, "error": f"Nepodporovaný formát {ext}."}), 400
