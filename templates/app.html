@@ -230,6 +230,11 @@ function App(){
       <button className="btn ghost" style={{marginTop:16}} onClick={()=>{setFile(null);setData(null);setError(null);}}>Zkusit jiný půdorys</button>
     </div>}
 
+    {/* INTEGRACE (cihlomat): SEM přijde LEAD-GATE — mezi analýzu a výsledek se vloží
+        formulář (e-mail + telefon). Výsledek je už spočítaný a držený v `data` (JSON);
+        stačí zobrazení <Result> podmínit stavem leadCaptured (jinak ukázat lead-form),
+        a kontakt + data._from_project (= projektová dokumentace = silnější lead) poslat
+        do Railway lead-pipeline. Zatím se výsledek zobrazuje rovnou. */}
     {data&&data.ok && <Result data={data} form={form} upd={upd} recalc={recalc} loading={loading} applyClaude={applyClaude}/>}
 
     <div className="foot">Orientační odhad hrubého zdiva · ceny bez DPH (retail 2025/26) · není závazná nabídka</div>
