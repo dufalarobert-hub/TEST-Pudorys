@@ -14,6 +14,9 @@
 
   "priecky_tier": {"popis": "Vnútorné priečkovky", "kc_m3": 4650, "kc_m3_rozsah": [4100, 5000], "typ_hrubka_mm": 115, "_referencny_produkt": "Ytong Klasik 100 = 4609 / Porotherm 11,5 Profi = 4855 Kč/m³ (2025/26)"},
 
+  "malta_lepidlo_pct": 0.06,
+  "_pozn_malta": "kc_m3 = cena SAMOTNÝCH tvárnic (DEK retail = blok bez malty). Zdicí + zakládací malta sa kupuje zvlášť. Doplnené ako 6% z ceny tvárnic — overené na reálnej Ytong ponuke RD Jiráský: tvárnice 314561 Kč, zdicí malta N103 8798 + zakládací L200 10560 = 19358 = 6,2%. (Omietky a spojky NEzahŕňame — omietky mimo scope.)",
+
   "_pozn_praca": "Práca (len zdenie, bez materiálu) Kč/m² = base + per_mm × hrúbka. Kalibrované na cenikyremesel.cz 2025/26: obvod 250mm≈490, 300≈545, 375≈627, 440≈699; priečky 100≈400, 150≈460.",
   "praca_obvod":   {"base_kc_m2": 215, "per_mm": 1.10, "rozsah_mult": [0.85, 1.20]},
   "praca_priecky": {"base_kc_m2": 280, "per_mm": 1.20, "rozsah_mult": [0.85, 1.20]},

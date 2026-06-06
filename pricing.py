@@ -147,6 +147,15 @@ def calculate(params: dict) -> dict:
                        f"{pricky_net:.0f} m² · tl. {pricky_th_note} (−{pricky_openings:.0f} m² dvere)",
                        round(pricky_net), "m²", pricky_price, pricky_mat))
 
+    # ===== MALTA / LEPIDLO (zdicí + zakládací) — kupuje sa zvlášť k tvárniciam (~6 %) =====
+    malta_pct = _CFG.get("malta_lepidlo_pct", 0)
+    if malta_pct:
+        tvarnice_mat = obvod_mat + nosne_mat + pricky_mat
+        malta_cost = round(tvarnice_mat * malta_pct)
+        items.append(_item("Malta / lepidlo (zdicí + zakládací)",
+                           f"~{round(malta_pct*100)} % z ceny tvárnic",
+                           1, "sada", malta_cost, malta_cost))
+
     # ===== 3. PREKLADY (paušál na otvor, bez značky) — otvory sa opakujú na každom podlaží =====
     openings = (okna + dvere) * podlazi
     preklad_cost = openings * _CFG["preklad_kc_otvor"]
