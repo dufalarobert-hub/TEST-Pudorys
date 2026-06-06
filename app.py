@@ -38,6 +38,8 @@ def index():
 
 @app.route("/api/analyze", methods=["POST"])
 def api_analyze():
+    # INTEGRACE (cihlomat): zde přidat rate-limit / auth — veřejné API volá metrovaný
+    # Gemini, na produkci chraň proti zneužití (IP/den, token, …).
     f = request.files.get("plan")
     if not f or not f.filename:
         return jsonify({"ok": False, "error": "Nahraj prosím pôdorys (PDF/PNG/JPG)."}), 400
@@ -96,6 +98,12 @@ def api_analyze():
     vision["escalation_reasons"] = esc_reasons
 
     result = pricing.calculate(params)
+
+    # INTEGRACE (cihlomat): zde se napojí lead-capture + ukládání do Railway.
+    # K dispozici: result (výpočet) + extraction["_from_project"] (= projektová dokumentace
+    # = silný lead). Až přibude kontakt (e-mail/telefon), POST {kontakt + result + _from_project}
+    # do cihlomat lead-pipeline / Railway Postgres. Engine je jinak stateless (nic neukládá).
+
     return jsonify({
         "ok": True,
         "gate": decision,
