@@ -39,6 +39,10 @@ ROOM_PERIM_K = 4.1
 PRICKY_UNC_AGREE = 0.11    # dva nezávislé zdroje priečok sa zhodujú → istejšie
 PRICKY_UNC_DIVERGE = 0.25  # silno sa líšia → neistejšie
 
+# Keď je podlaží > 1, ale máme len jeden pôdorys (1.NP), horné podlažia odhadujeme ako kópiu
+# prízemia — neistota navyše úmerná podielu "odhadnutých" podlaží.
+ASSUMED_FLOOR_UNC = 0.12
+
 # Cross-check: priamy trhový benchmark hrubej stavby (Kč/m² podlahy) — viď cihly.json
 
 # spätná kompatibilita starých názvov systému → tier
@@ -243,14 +247,18 @@ def calculate(params: dict) -> dict:
     u_tier = (z_hi - z_lo) / (2 * zdivo_total) if zdivo_total else 0
     # d) regionálny rozptyl (Praha/Brno +10-20 %, práca, metodika)
     u_region = _CFG["regionalna_neistota"]
+    # e) odhadnuté horné podlažia (máme len 1.NP, vyššie berieme ako kópiu prízemia)
+    u_floors = ASSUMED_FLOOR_UNC * (podlazi - 1) / podlazi if podlazi > 1 else 0.0
 
-    band = min(0.45, max(0.08, math.sqrt(u_read**2 + u_pricky**2 + u_tier**2 + u_region**2)))
+    band = min(0.45, max(0.08, math.sqrt(u_read**2 + u_pricky**2 + u_tier**2 + u_region**2 + u_floors**2)))
     up_extra = 0.0   # asymetrické rozšírenie hore (nastaví sa pri podozrení na nezachytené steny)
 
     # ===== Sanity check geometrie =====
     warnings = []
     geom_ratio = None
-    plocha_celk = (float(zast) * podlazi) if zast else (float(uzit) if uzit else None)
+    # POZOR: úžitná aj zastavaná sú plochy JEDNÉHO podlažia (úžitná = súčet miestností 1.NP) →
+    # pre CELÚ budovu (konzistentne so zdivom, ktoré je × podlazi) ich treba vynásobiť podlažiami.
+    plocha_celk = (float(zast) * podlazi) if zast else (float(uzit) * podlazi if uzit else None)
     if plocha_celk and obvod_m:
         plocha_1np = plocha_celk / podlazi
         geom_ratio = obvod_m / (4 * math.sqrt(plocha_1np)) if plocha_1np > 0 else None
@@ -274,12 +282,17 @@ def calculate(params: dict) -> dict:
         else:
             warnings.append("Počítáme s 1 nadzemním podlažím. Má dům patro nebo obytné podkroví? "
                             "Upravte počet podlaží níže — cena zdiva se počtem podlaží násobí.")
+    else:
+        warnings.append(f"Počítáme {podlazi} podlaží, ale analyzovali jsme jen JEDEN půdorys (1.NP). "
+                        "Vyšší podlaží odhadujeme jako kopii přízemí — pokud se liší (menší patro, "
+                        "podkroví, jiné dispozice), výsledek se bude lišit. Pro přesný odhad nahrajte "
+                        "i půdorys dalšího podlaží. (Proto je u vícepodlažního domu rozpětí širší.)")
 
     # ===== Robustný odhad úžitnej plochy pre cross-check =====
     uz = None
     zast_total = float(zast) * podlazi if zast else None
     if uzit:
-        uz = float(uzit)
+        uz = float(uzit) * podlazi          # úžitná 1.NP × podlažia = úžitná celej budovy
         if zast_total and uz < 0.5 * zast_total:
             warnings.append(f"Úžitná plocha {uz:.0f} m² je nízka voči zastavanej {zast_total:.0f} m² "
                             "— AI ju asi podčítala; cross-check beriem zo zastavanej.")
@@ -347,7 +360,8 @@ def calculate(params: dict) -> dict:
         "range_lo": lo,
         "range_hi": hi,
         "band_zdroje": {"citanie": round(u_read, 3), "priecky": round(u_pricky, 3),
-                        "cena_triedy": round(u_tier, 3), "region": u_region},
+                        "cena_triedy": round(u_tier, 3), "region": u_region,
+                        "odhad_podlazi": round(u_floors, 3)},
         "pricky_zdroj": pricky_zdroj,
         "pricky_ai_m": round(pricky_ai, 1),
         "pricky_geom_m": pricky_geom,
