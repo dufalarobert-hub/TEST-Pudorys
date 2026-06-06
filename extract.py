@@ -125,34 +125,72 @@ Vrať POUZE JSON: {"plan_page": <index stránky s půdorysem>, "found": true/fal
 Když mezi stránkami žádný půdorys není, dej found=false a plan_page=0."""
 
 
+MAX_DOC_PAGES = 150         # tvrdý strop (extrémne PDF neprocesujeme celé)
+MAX_PLAN_CANDIDATES = 14    # koľko "výkresových" strán pošleme Geminimu na výber pôdorysu
+
+
+def _drawing_candidate_idxs(doc):
+    """LACNÝ lokálny predfilter (bez AI): z veľkého projektu vyber strany čo vyzerajú ako
+    VÝKRES (veľa vektorových čiar / veľký raster, málo textu) — nie technická zpráva,
+    tabuľka, titulka. Vráti zoradené indexy strán (kandidátov na pôdorys)."""
+    n = min(doc.page_count, MAX_DOC_PAGES)
+    scored = []
+    for i in range(n):
+        page = doc[i]
+        t = len(page.get_text("text") or "")
+        try:
+            d = len(page.get_drawings())
+        except Exception:
+            d = 0
+        has_img = len(page.get_images()) > 0
+        is_drawingish = (d >= 40 or has_img) and t < 2000   # výkres = čiary/raster + málo textu
+        score = d + (800 if has_img else 0) - t * 0.05
+        scored.append((is_drawingish, score, i))
+    draws = [(s, i) for dl, s, i in scored if dl]
+    if draws:
+        draws.sort(reverse=True)
+        return sorted(i for _, i in draws[:MAX_PLAN_CANDIDATES])
+    return list(range(min(n, MAX_PLAN_CANDIDATES)))     # fallback: prvých N strán
+
+
 def _pick_plan_page(path: str):
-    """Viacstránkové PDF -> index strany s pôdorysom 1.NP (lacný náhľadový sken).
+    """Viacstránkové PDF/projekt -> index strany s pôdorysom 1.NP.
+    Veľký projekt: lacný lokálny predfilter na výkresové strany → Gemini vyberie pôdorys.
     Vráti (idx, pocet_stran). Pre obrázok / 1-stranové PDF vráti (0, 1)."""
     p = str(path).lower()
     if not p.endswith(".pdf"):
         return 0, 1
     doc = fitz.open(path)
     n = doc.page_count
-    doc.close()
     if n <= 1:
+        doc.close()
         return 0, n
-    thumbs = _pages_to_images(path, max_side=760)   # malé náhľady = lacné a rýchle
+    # malé projekty: vezmi všetky strany; veľké: len výkresových kandidátov
+    cand = list(range(min(n, MAX_SCAN_PAGES))) if n <= MAX_PLAN_CANDIDATES else _drawing_candidate_idxs(doc)
     parts = []
-    for i, t in enumerate(thumbs):
-        parts.append(f"Stránka {i}:")
-        parts.append(types.Part.from_bytes(data=t, mime_type="image/png"))
+    for pos, i in enumerate(cand):
+        pix = doc[i].get_pixmap(matrix=fitz.Matrix(1.4, 1.4))
+        im = Image.open(io.BytesIO(pix.tobytes("png")))
+        if max(im.size) > 760:
+            s = 760 / max(im.size)
+            im = im.resize((int(im.width * s), int(im.height * s)))
+        buf = io.BytesIO()
+        im.convert("RGB").save(buf, format="PNG")
+        parts.append(f"Stránka {pos}:")
+        parts.append(types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png"))
+    doc.close()
     parts.append(PLAN_PICK_PROMPT)
     try:
         client = genai.Client(api_key=config.get_gemini_key())
         cfg = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_budget=256))
         resp = client.models.generate_content(model=config.GEMINI_VISION_MODEL, contents=parts, config=cfg)
         d = _parse_json(resp.text)
-        idx = int(_num(d.get("plan_page"), 0) or 0)
-        if not d.get("found") or idx < 0 or idx >= len(thumbs):
-            idx = 0
-        return idx, n
+        pos = int(_num(d.get("plan_page"), 0) or 0)
+        if not d.get("found") or pos < 0 or pos >= len(cand):
+            pos = 0
+        return cand[pos], n           # mapuj pozíciu v zozname kandidátov na skutočnú stranu
     except Exception:
-        return 0, n   # fallback: prvá strana
+        return (cand[0] if cand else 0), n
 
 
 def _parse_json(text: str) -> dict:
