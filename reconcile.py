@@ -42,6 +42,30 @@ def quality_gate(g):
     src = g.get("meritko_source") or "žádné"
     conf = int(g.get("confidence_0_100") or 0)
     has_koty = src == "z kót" or koty >= 2
+
+    # DRUH OBJEKTU / KONSTRUKCE — kalkulačka platí len pre ZDĚNÝ RODINNÝ DŮM.
+    # Kontroluj PRED ACCEPT (byt môže mať dobré kóty). Defaulty sú konzervatívne (rodinny_dum/zděné),
+    # takže reálny dom sa neodmietne — odmietneme len pri jasnom signáli.
+    typ = g.get("typ_stavby") or "rodinny_dum"
+    konstr = g.get("konstrukce")
+    if typ == "byt":
+        return "REFUSE", ("Vypadá to na půdorys BYTU, ne celého domu. Tahle kalkulačka počítá "
+                          "hrubou stavbu (zdivo) zděného rodinného domu — u bytu jako jednotky "
+                          "v bytovém domě rozpočet zdiva nedává smysl (nosné stěny jsou společné). "
+                          "Nahrajte prosím půdorys celého rodinného domu.")
+    if typ == "bytovy_dum":
+        return "REFUSE", ("Vypadá to na BYTOVÝ DŮM. Kalkulačka je kalibrovaná na hrubou stavbu "
+                          "rodinného domu, ne na vícebytový objekt — výsledek by byl zavádějící. "
+                          "Pro rodinný dům nahrajte jeho půdorys.")
+    if typ == "jine":
+        return "REFUSE", ("Tohle nevypadá na rodinný dům. Kalkulačka počítá hrubou stavbu (zdivo) "
+                          "zděného rodinného domu. Nahrajte prosím půdorys RD.")
+    if konstr in ("drevostavba", "skelet"):
+        co = "dřevostavbu" if konstr == "drevostavba" else "skeletovou (ŽB/ocel) konstrukci"
+        return "REFUSE", (f"Výkres vypadá na {co}. Tahle kalkulačka počítá ZDĚNOU hrubou stavbu "
+                          "(cihla/tvárnice/pórobeton) — pro jiný nosný systém by cena nesedla. "
+                          "Pro zděný rodinný dům nahrajte jeho půdorys.")
+
     if has_koty and conf >= 60:
         return "ACCEPT", None
     if src in ("plochy m²", "měřítko/scale bar") and conf >= 45:

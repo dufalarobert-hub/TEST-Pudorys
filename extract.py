@@ -35,6 +35,17 @@ jsou jen ILUSTRACE, ne pravidla. Co není v dokumentu, nevymýšlej — vrať nu
 
 Tvůj úkol: z výkresu vyčíst data potřebná pro odhad ceny HRUBÉ STAVBY (zdivo).
 
+DRUH OBJEKTU A KONSTRUKCE (důležité — kalkulačka platí jen pro ZDĚNÝ RODINNÝ DŮM):
+Rozpoznej VÝZNAMOVĚ, CO je na výkrese:
+- typ_stavby: jde o celý rodinný dům, nebo jen o BYT (jedna bytová jednotka v patře — popisek
+  "byt", "byt č.", dispozice typu "3+kk/2+1", okolo jsou sousední jednotky, jen část podlaží),
+  nebo o BYTOVÝ DŮM (více bytů), nebo něco jiného (hala, garáž, komerční objekt).
+- konstrukce: je nosný systém ZDĚNÝ (cihla/tvárnice/pórobeton), DŘEVOSTAVBA (rámová/sloupková,
+  dřevěné stěny), nebo SKELET/jiné (železobetonový/ocelový skelet)?
+DŮLEŽITÉ — buď KONZERVATIVNÍ: když to z výkresu jednoznačně NEPLYNE, předpokládej
+typ_stavby="rodinny_dum" a konstrukce=null (= bereme jako zděný RD). Hodnotu "byt" / "drevostavba"
+/ "skelet" dej JEN když je pro to v dokumentu jasný signál (popisek, legenda, charakter výkresu).
+
 POSTUP:
 1. Najdi zakótovaný půdorys. Přečti kóty (v mm) DOSLOVA z obrázku.
    POZOR na jednotky kót: mohou být v mm (např. 11000) NEBO v metrech (např. 11.0 m).
@@ -87,6 +98,8 @@ POSTUP:
 
 Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
 {
+  "typ_stavby": "rodinny_dum" | "byt" | "bytovy_dum" | "jine"   (konzervativně: nejsi-li si jistý, "rodinny_dum"),
+  "konstrukce": "zdene" | "drevostavba" | "skelet" | null        (nejsi-li si jistý → null = bereme jako zděné),
   "obvod_m": <číslo>,
   "obvod_tloustka_mm": <číslo>,
   "tloustka_z_koty": <true/false — je tloušťka NOSNÉ TVÁRNICE dána výslovně (kóta tloušťky NEBO typ tvárnice v legendě, např. "Ytong 300")? true jen pokud to vidíš; jinak false (vizuální odhad)>,
@@ -280,6 +293,11 @@ def _normalize(d: dict) -> dict:
         uzit = round(sum(rooms), 1)
     d["uzitna_plocha_m2"] = uzit
     return {
+        # konzervatívne defaulty: keď model netrafí enum, beriem ako murovaný RD (nech neodmietneme reálny dom)
+        "typ_stavby": (d.get("typ_stavby") if d.get("typ_stavby") in
+                       ("rodinny_dum", "byt", "bytovy_dum", "jine") else "rodinny_dum"),
+        "konstrukce": (d.get("konstrukce") if d.get("konstrukce") in
+                       ("zdene", "drevostavba", "skelet") else None),
         "obvod_m": _num(d.get("obvod_m"), 0) or 0,
         "obvod_tloustka_mm": int(_num(d.get("obvod_tloustka_mm"), 300) or 300),
         "tloustka_z_koty": bool(d.get("tloustka_z_koty")),
