@@ -12,6 +12,9 @@ uploads/
 *.log
 .DS_Store
 
+# Testovacie projekty (môžu byť veľké / súkromné — nepatria do repa)
+test_projekty/
+
 # Tajné / lokálne
 .env
 .env.local
