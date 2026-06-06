@@ -29,6 +29,10 @@ READING_BASE_UNC = 0.10
 LOW_SHARE_PCT = 25
 UNDERCOUNT_UP = 0.15   # asymetrické rozšírenie HORE (reálne môže byť vyššie)
 
+# keď poznáme PRESNÝ produkt z legendy, nehádame v celom rozsahu triedy (lacný↔drahý variant),
+# zostáva len trhová/regionálna/časová odchýlka ceny KONKRÉTNEJ tehly → úzke ±okolo kc_m3.
+LEGEND_PRODUCT_PRICE_UNC = 0.06
+
 # Cross-check: priamy trhový benchmark hrubej stavby (Kč/m² podlahy) — viď cihly.json
 
 # spätná kompatibilita starých názvov systému → tier
@@ -176,9 +180,15 @@ def calculate(params: dict) -> dict:
     # b) neredukovateľná neistota DĹŽKY priečok (úmerne ich cenovému podielu)
     pricky_cost = pricky_mat + round(pricky_net * labor_pricky_m2)
     u_pricky = PRICKY_INHERENT_UNC * (pricky_cost / zdivo_total if zdivo_total else 0)
-    # c) CENOVÝ rozsah zvolenej triedy (retail Kč/m³ od–do × hrúbka) premietnutý na celok
+    # c) CENOVÝ rozsah zvolenej triedy (retail Kč/m³ od–do × hrúbka) premietnutý na celok.
+    #    Keď je obvodový materiál čítaný PRESNE z legendy (a triedu si user neprepísal), nehádame
+    #    v celom rozsahu triedy — pre obvod/nosné použijeme úzke ±okolo kc_m3 (známy produkt).
     base = zdivo_total - obvod_mat - nosne_mat - pricky_mat
-    tlo, thi = tier["kc_m3_rozsah"]
+    if tier_from_legend and params.get("zdivo_zdroj") == "legenda":
+        kc = tier["kc_m3"]
+        tlo, thi = kc * (1 - LEGEND_PRODUCT_PRICE_UNC), kc * (1 + LEGEND_PRODUCT_PRICE_UNC)
+    else:
+        tlo, thi = tier["kc_m3_rozsah"]
     plo, phi = pt["kc_m3_rozsah"]
     z_lo = base + (obvod_net * obvod_th + nosne_net * nosne_th) * tlo / 1000 \
                 + pricky_net * plo * pricky_th / 1000
