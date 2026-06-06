@@ -97,7 +97,14 @@
   .spin{display:inline-block;width:16px;height:16px;border:3px solid #fff6;border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
   .foot{text-align:center;color:var(--mut);font-size:12px;margin-top:28px}
+  .modes{display:flex;gap:8px;margin-bottom:16px}
+  .modes button{flex:1;background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:13px 10px;cursor:pointer;font-family:inherit;font-size:14.5px;font-weight:700;color:var(--mut);transition:.15s;text-align:center}
+  .modes button:hover{border-color:#dcc9b4}
+  .modes button.on{border-color:var(--brick);background:#fff5ee;color:var(--ink);box-shadow:0 4px 12px rgba(192,73,43,.1)}
+  .modes button small{display:block;font-weight:400;font-size:11.5px;color:var(--mut);margin-top:3px}
   @media(max-width:560px){
+    .modes button{font-size:13px;padding:11px 8px}
+    .modes button small{font-size:11px}
     .wrap{padding:20px 13px 48px}
     h1{font-size:25px}
     .lede{font-size:14.5px}
@@ -126,6 +133,7 @@ const TIERS=[
 
 function App(){
   const [file,setFile]=useState(null);
+  const [mode,setMode]=useState('plan');   // 'plan' = foto pôdorysu · 'project' = projektová dokumentácia
   const [drag,setDrag]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState(null);
@@ -158,6 +166,7 @@ function App(){
   const applyClaude=()=>recalc(data.claude.suggestions||{});
   const upd=(k,v)=>setForm(f=>({...f,[k]:v}));
   const reset=()=>{setFile(null);setData(null);setError(null);};
+  const setM=(m)=>{setMode(m);setFile(null);setError(null);};
   const showResult=data&&data.ok;
 
   return <div className="wrap">
@@ -169,29 +178,41 @@ function App(){
     {!showResult ? <>
       {!data && <>
         <h1>Kolik stojí zdivo<br/>vašeho domu?</h1>
-        <p className="lede">Nahrajte půdorys s kótami a za pár vteřin dostanete orientační odhad
-          ceny obvodového zdiva a příček — materiál i práce, včetně rozpětí.</p>
+        <p className="lede">Nahrajte půdorys (foto/sken) nebo celou projektovou dokumentaci a za pár vteřin
+          dostanete orientační odhad ceny zdiva — materiál i práce, včetně rozpětí.</p>
       </>}
       <div className="card">
+        <div className="modes">
+          <button type="button" className={mode==='plan'?'on':''} onClick={()=>setM('plan')}>📐 Mám půdorys
+            <small>foto / sken / 1 strana</small></button>
+          <button type="button" className={mode==='project'?'on':''} onClick={()=>setM('project')}>📁 Projektová dokumentace
+            <small>celé PDF z projektu</small></button>
+        </div>
         <form onSubmit={analyze}>
           <label className={"drop"+(drag?" drag":"")+(file?" has":"")}
             onDragOver={e=>{e.preventDefault();setDrag(true);}}
             onDragLeave={()=>setDrag(false)}
             onDrop={e=>{e.preventDefault();setDrag(false);setFile(e.dataTransfer.files[0]);}}>
-            <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style={{display:'none'}}
+            <input ref={fileRef} type="file" accept={mode==='project'?'.pdf':'.pdf,.png,.jpg,.jpeg,.webp'} style={{display:'none'}}
               onChange={e=>setFile(e.target.files[0])}/>
-            <div className="ic">{file?'📑':'📐'}</div>
-            <div className="t1">{file?'Soubor připraven':<><b>Klikněte</b> nebo přetáhněte půdorys sem</>}</div>
-            <div className="t2">PDF, PNG nebo JPG · jedno podlaží</div>
+            <div className="ic">{file?'📑':(mode==='project'?'📁':'📐')}</div>
+            <div className="t1">{file?'Soubor připraven':(mode==='project'
+              ? <><b>Klikněte</b> nebo přetáhněte projektovou dokumentaci</>
+              : <><b>Klikněte</b> nebo přetáhněte půdorys sem</>)}</div>
+            <div className="t2">{mode==='project'?'PDF z projektu — najdeme v něm půdorys 1.NP':'Foto, sken nebo 1 strana · PDF, PNG, JPG'}</div>
             {file && <div className="fname">✓ {file.name}</div>}
           </label>
-          <div className="hints">
-            <div className="hint"><b>✓</b> s kótami (rozměry)</div>
-            <div className="hint"><b>✓</b> celý půdorys</div>
-            <div className="hint"><b>✓</b> čitelné stěny</div>
-          </div>
+          {mode==='project'
+            ? <p className="muted" style={{textAlign:'center',marginTop:14,marginBottom:0,fontSize:13}}>
+                V dokumentaci najdeme půdorys přízemí a spočítáme z něj. Z celého projektu umíme přesnější odhad.</p>
+            : <div className="hints">
+                <div className="hint"><b>✓</b> s kótami (rozměry)</div>
+                <div className="hint"><b>✓</b> celý půdorys</div>
+                <div className="hint"><b>✓</b> čitelné stěny</div>
+              </div>}
           <button className="btn full" disabled={loading}>
-            {loading?<span><span className="spin"></span>Analyzuji půdorys…</span>:'Spočítat cenu zdiva →'}
+            {loading?<span><span className="spin"></span>{mode==='project'?'Hledám půdorys v dokumentaci…':'Analyzuji půdorys…'}</span>
+              :(mode==='project'?'Najít půdorys a spočítat →':'Spočítat cenu zdiva →')}
           </button>
         </form>
         {error && !(data&&data.refuse) && <div className="err">⚠️ {error}</div>}
@@ -219,6 +240,9 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
   const r=data.pricing, ex=data.extraction, cl=data.claude, cc=r.crosscheck;
   const confColor=ex.confidence_0_100>=70?'#2e7d52':ex.confidence_0_100>=45?'#b8860b':'#c0492b';
   return <div>
+    {ex._from_project &&
+      <div className="warn" style={{marginTop:16,background:'#f2f7f3',borderColor:'#cfe6d6',color:'#2e5d44'}}>
+        📁 Z vaší projektové dokumentace ({ex._pages_total} stran) jsme našli a použili <b>stranu {ex._page_idx+1}</b> (půdorys).</div>}
     {data.gate==='WARN' && data.gate_msg &&
       <div className="warn" style={{marginTop:16}}>ℹ️ {data.gate_msg}</div>}
     {r.warnings && r.warnings.length>0 &&

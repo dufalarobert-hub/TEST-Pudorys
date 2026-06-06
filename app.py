@@ -81,7 +81,8 @@ def api_analyze():
     merged = None
     if escalate:
         try:
-            images = extract._pages_to_images(str(save_path))
+            only = extraction.get("_page_idx") if extraction.get("_from_project") else None
+            images = extract._pages_to_images(str(save_path), only_page=only)
             vision = claude_vision.read_independently(
                 images, params, model=reconcile.ESCALATE_MODEL)
         except Exception:  # noqa: BLE001

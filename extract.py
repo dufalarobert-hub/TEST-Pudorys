@@ -20,7 +20,7 @@ from google.genai import types
 
 import config
 
-MAX_PAGES = 6           # koľko strán PDF pošleme (projektyrd má 2)
+MAX_SCAN_PAGES = 25     # koľko strán projektovej dokumentácie prejdeme pri hľadaní pôdorysu
 RENDER_ZOOM = 3.0       # DPI faktor pre render strán
 MAX_SIDE_PX = 2200      # downscale aby sme nezahltili request
 
@@ -91,13 +91,15 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
 Pokud něco nelze přečíst, dej null a sniž confidence. Nevymýšlej si přesné kóty které nevidíš."""
 
 
-def _pages_to_images(path: str):
-    """PDF -> zoznam PIL Image; obrázok -> [PIL Image]."""
+def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None):
+    """PDF -> zoznam PNG bytes; obrázok -> [bytes].
+    only_page = vyrenderuj LEN tú jednu stranu (na pôdorys vybraný z projektu)."""
     p = str(path).lower()
     imgs = []
     if p.endswith(".pdf"):
         doc = fitz.open(path)
-        for i in range(min(doc.page_count, MAX_PAGES)):
+        idxs = [only_page] if only_page is not None else range(min(doc.page_count, MAX_SCAN_PAGES))
+        for i in idxs:
             pix = doc[i].get_pixmap(matrix=fitz.Matrix(RENDER_ZOOM, RENDER_ZOOM))
             imgs.append(Image.open(io.BytesIO(pix.tobytes("png"))))
         doc.close()
@@ -106,13 +108,51 @@ def _pages_to_images(path: str):
 
     out = []
     for im in imgs:
-        if max(im.size) > MAX_SIDE_PX:
-            scale = MAX_SIDE_PX / max(im.size)
+        if max(im.size) > max_side:
+            scale = max_side / max(im.size)
             im = im.resize((int(im.width * scale), int(im.height * scale)))
         buf = io.BytesIO()
         im.convert("RGB").save(buf, format="PNG")
         out.append(buf.getvalue())
     return out
+
+
+PLAN_PICK_PROMPT = """Dostáváš očíslované stránky (0, 1, 2, …) stavební dokumentace rodinného domu.
+Najdi stránku, která je PŮDORYS PŘÍZEMÍ (1.NP) — okótovaný plán půdorysu s místnostmi a kótami.
+NENÍ to: řez, pohled (fasáda), situace, výkres krovu/základů/stropů, ani textová zpráva/tabulka.
+Když je víc půdorysů různých podlaží, vyber PŘÍZEMÍ (1.NP).
+Vrať POUZE JSON: {"plan_page": <index stránky s půdorysem>, "found": true/false}.
+Když mezi stránkami žádný půdorys není, dej found=false a plan_page=0."""
+
+
+def _pick_plan_page(path: str):
+    """Viacstránkové PDF -> index strany s pôdorysom 1.NP (lacný náhľadový sken).
+    Vráti (idx, pocet_stran). Pre obrázok / 1-stranové PDF vráti (0, 1)."""
+    p = str(path).lower()
+    if not p.endswith(".pdf"):
+        return 0, 1
+    doc = fitz.open(path)
+    n = doc.page_count
+    doc.close()
+    if n <= 1:
+        return 0, n
+    thumbs = _pages_to_images(path, max_side=760)   # malé náhľady = lacné a rýchle
+    parts = []
+    for i, t in enumerate(thumbs):
+        parts.append(f"Stránka {i}:")
+        parts.append(types.Part.from_bytes(data=t, mime_type="image/png"))
+    parts.append(PLAN_PICK_PROMPT)
+    try:
+        client = genai.Client(api_key=config.get_gemini_key())
+        cfg = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_budget=256))
+        resp = client.models.generate_content(model=config.GEMINI_VISION_MODEL, contents=parts, config=cfg)
+        d = _parse_json(resp.text)
+        idx = int(_num(d.get("plan_page"), 0) or 0)
+        if not d.get("found") or idx < 0 or idx >= len(thumbs):
+            idx = 0
+        return idx, n
+    except Exception:
+        return 0, n   # fallback: prvá strana
 
 
 def _parse_json(text: str) -> dict:
@@ -127,8 +167,11 @@ def _parse_json(text: str) -> dict:
 
 
 def extract_from_plan(path: str) -> dict:
-    """Hlavná funkcia: cesta k súboru -> extrahované parametre (dict)."""
-    images = _pages_to_images(path)
+    """Hlavná funkcia: cesta k súboru -> extrahované parametre (dict).
+    Pri viacstránkovom projekte najprv vyberie stránku s pôdorysom, potom z nej extrahuje."""
+    page_idx, n_pages = _pick_plan_page(path)          # medzikrok pre projektovú dokumentáciu
+    only = page_idx if (str(path).lower().endswith(".pdf") and n_pages > 1) else None
+    images = _pages_to_images(path, only_page=only)
     parts = [types.Part.from_bytes(data=img, mime_type="image/png") for img in images]
     parts.append(EXTRACTION_PROMPT)
 
@@ -142,6 +185,9 @@ def extract_from_plan(path: str) -> dict:
             data = _parse_json(resp.text)
             data["_model"] = model
             data["_pages"] = len(images)
+            data["_page_idx"] = page_idx
+            data["_pages_total"] = n_pages
+            data["_from_project"] = n_pages > 1
             um = getattr(resp, "usage_metadata", None)
             data["_usage"] = {
                 "in": getattr(um, "prompt_token_count", 0) or 0,
@@ -196,6 +242,9 @@ def _normalize(d: dict) -> dict:
         "_model": d.get("_model", ""),
         "_pages": d.get("_pages", 1),
         "_usage": d.get("_usage", {"in": 0, "out": 0}),
+        "_page_idx": int(d.get("_page_idx", 0) or 0),
+        "_pages_total": int(d.get("_pages_total", 1) or 1),
+        "_from_project": bool(d.get("_from_project")),
     }
 
 
