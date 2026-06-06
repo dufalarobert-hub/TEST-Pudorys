@@ -25,8 +25,8 @@
   "venec_rozsah": [1800, 2600],
   "vyska_podlazia_m": 2.8,
   "regionalna_neistota": 0.05,
-  "_pozn_hruba": "Hrubá stavba (základy+zdivo+stropy+krov+strecha) ~12-18 tis. Kč/m² podlahy 2025/26. Kalibrované tak, aby naše OVERENÉ zdivo tvorilo zdravých ~30-45 % (svislé konštrukcie = 40-45 % hrubej stavby). Normálny dom ~30-40 %, podčítaný (chýba garáž/nosné) <25 % → flag.",
-  "sanity_hruba_stavba_kc_m2": [12000, 18000],
+  "_pozn_hruba": "Hrubá stavba (základy+zdivo+stropy+krov+strecha) ~14-20 tis. Kč/m² podlahy 2026 (spodok 12 tis. bol predinflačný 2020/21, dnes reálne 14-15 tis.). Kalibrované tak, aby naše OVERENÉ zdivo tvorilo zdravých ~30-45 %. Normálny dom ~30-40 %, podčítaný (chýba garáž/nosné) <25 % + geometrický signál → flag.",
+  "sanity_hruba_stavba_kc_m2": [14000, 20000],
 
   "neobsahuje": "zateplenie, základy, stropy, strechu, omietky a vnútorné rozvody"
 }

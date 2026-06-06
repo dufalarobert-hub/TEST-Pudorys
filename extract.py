@@ -49,7 +49,10 @@ typ_stavby="rodinny_dum" a konstrukce=null (= bereme jako zděný RD). Hodnotu "
 POSTUP:
 1. Najdi zakótovaný půdorys. Přečti kóty (v mm) DOSLOVA z obrázku.
    POZOR na jednotky kót: mohou být v mm (např. 11000) NEBO v metrech (např. 11.0 m).
-   Rozpoznej to a VŠE přepočítej do metrů.
+   Rozpoznej to a VŠE přepočítej do metrů. Pokud jsou kóty ve STOPÁCH/PALCÍCH (znaky ' a "
+   nebo formát 34'-6"), přepočítej na metry (1' = 0,3048 m, 1" = 0,0254 m) a v note to uveď.
+   Pokud je výkres focený POD ÚHLEM / pootočený / rozmazaný / ručně kreslený (ne čistý CAD),
+   výrazně SNIŽ confidence a uveď to v note — kóty pak nejsou spolehlivé.
 2. Obvodové zdivo: spočítej délku vnějšího obrysu domu z celkových kót
    (např. obdélník 11000 x 13500 mm => obvod = 2*(11+13.5) = 49 m; nebo 17.10 x 8.90 m
    => 2*(17.1+8.9) = 52 m). U členitého (L/U) tvaru sečti všechny vnější strany.
@@ -95,6 +98,15 @@ POSTUP:
    Když je oficiální užitná/zastavěná uvedena v popisu, použij ji.
 6. Spočítej okna a dveře (i odhadem). Okna/dveře poznáš podle přerušení ve stěně
    se symbolem otevírání (oblouk) nebo podle šířkové kóty otvoru (800, 900, 2150…).
+   SPOLEHLIVĚJŠÍ: pokud je v dokumentu TABULKA / VÝPIS OKEN A DVEŘÍ (značky O1, O2, D1…
+   s rozměry a počty kusů), použij počty a šířky ODTUD — je to tvrdší údaj než počítání
+   symbolů na půdorysu. (Čti významově — výpis může být jakkoliv nadepsaný.)
+7. SCHODIŠTĚ: je na půdorysu schodiště (stupně, šipka nahoru/dolů, "S" značka)? Pokud ano,
+   dům má skoro jistě víc podlaží (nebo podkroví/sklep) → ma_schodiste=true. To je signál,
+   že počítat jen 1 podlaží by bylo podcenění.
+8. VÝŠKA PODLAŽÍ: pokud je k dispozici ŘEZ domu nebo výšková kóta (konstrukční/světlá výška,
+   např. 2,75 / 3,0 m), použij ji do vyska_podlazi_m. Když ji nevidíš, nech null
+   (dosadí se typická 2,8 m) a NEZVYŠUJ kvůli tomu confidence.
 
 Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
 {
@@ -115,6 +127,7 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "uzitna_plocha_m2": <součet ploch místností, nebo oficiální údaj, nebo null>,
   "zastavena_plocha_m2": <číslo nebo null>,
   "pocet_podlazi": <číslo nebo null>,
+  "ma_schodiste": <true/false — je na půdorysu schodiště (= dům má pravděpodobně víc podlaží)?>,
   "vyska_podlazi_m": <číslo nebo null>,
   "pocet_oken": <číslo nebo null>,
   "pocet_dveri": <číslo nebo null>,
@@ -314,6 +327,7 @@ def _normalize(d: dict) -> dict:
         "zastavena_plocha_m2": _num(d.get("zastavena_plocha_m2")),
         "plochy_mistnosti_m2": rooms,
         "pocet_podlazi": int(_num(d.get("pocet_podlazi"), 1) or 1),
+        "ma_schodiste": bool(d.get("ma_schodiste")),
         "vyska_podlazi_m": _num(d.get("vyska_podlazi_m"), 2.8) or 2.8,
         "pocet_oken": int(_num(d.get("pocet_oken"), 0) or 0),
         "pocet_dveri": int(_num(d.get("pocet_dveri"), 0) or 0),

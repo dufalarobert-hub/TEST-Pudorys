@@ -109,7 +109,8 @@ def calculate(params: dict) -> dict:
 
     # ===== 1. OBVODOVÉ ZDIVO (materiál = Kč/m³ × hrúbka) =====
     obvod_gross = obvod_m * vyska * podlazi
-    obvod_openings = okna * WINDOW_M2 + ENTRANCE_DOOR_M2
+    # okná sa opakujú na KAŽDOM podlaží (čítame ich z 1.NP), vchodové dvere len raz (prízemie)
+    obvod_openings = okna * WINDOW_M2 * podlazi + ENTRANCE_DOOR_M2
     obvod_net = max(obvod_gross - obvod_openings, 0)
     obvod_price = round(tier["kc_m3"] * obvod_th / 1000)        # Kč/m² steny pri tejto hrúbke
     obvod_mat = round(obvod_net * obvod_price)
@@ -136,7 +137,8 @@ def calculate(params: dict) -> dict:
 
     # ===== 3. VNÚTORNÉ PRIEČKY (materiál = Kč/m³ × hrúbka) =====
     pricky_gross = pricky_m * vyska * podlazi
-    pricky_openings = max(0, dvere - 1) * INTERIOR_DOOR_M2
+    # vnútorné dvere (dvere − 1 vchod) sa tiež opakujú na každom podlaží
+    pricky_openings = max(0, dvere - 1) * INTERIOR_DOOR_M2 * podlazi
     pricky_net = max(pricky_gross - pricky_openings, 0)
     pricky_price = round(pt["kc_m3"] * pricky_th / 1000)
     pricky_mat = round(pricky_net * pricky_price)
@@ -145,17 +147,20 @@ def calculate(params: dict) -> dict:
                        f"{pricky_net:.0f} m² · tl. {pricky_th_note} (−{pricky_openings:.0f} m² dvere)",
                        round(pricky_net), "m²", pricky_price, pricky_mat))
 
-    # ===== 3. PREKLADY (paušál na otvor, bez značky) =====
-    openings = okna + dvere
+    # ===== 3. PREKLADY (paušál na otvor, bez značky) — otvory sa opakujú na každom podlaží =====
+    openings = (okna + dvere) * podlazi
     preklad_cost = openings * _CFG["preklad_kc_otvor"]
     if openings:
         items.append(_item("Preklady nad otvormi", f"{openings}× otvor (okná + dvere)",
                            openings, "otvor", _CFG["preklad_kc_otvor"], preklad_cost))
 
-    # ===== 4. ŽB VĚNEC =====
-    venec_cost = round(obvod_m * podlazi * _CFG["venec_kc_m"])
-    items.append(_item("Železobetónový věnec ⚠odhad", f"{obvod_m:.0f} m × {podlazi} podl.",
-                       round(obvod_m * podlazi), "m", _CFG["venec_kc_m"], venec_cost))
+    # ===== 4. ŽB VĚNEC — nielen po obvode, ale aj nad vnútornými nosnými stenami (nesú strop) =====
+    venec_m = (obvod_m + nosne_m) * podlazi
+    venec_cost = round(venec_m * _CFG["venec_kc_m"])
+    venec_detail = (f"{obvod_m + nosne_m:.0f} m (obvod + nosné) × {podlazi} podl."
+                    if nosne_m > 0 else f"{obvod_m:.0f} m × {podlazi} podl.")
+    items.append(_item("Železobetónový věnec ⚠odhad", venec_detail,
+                       round(venec_m), "m", _CFG["venec_kc_m"], venec_cost))
 
     material_total = sum(i["total"] for i in items)
 
@@ -203,18 +208,28 @@ def calculate(params: dict) -> dict:
 
     # ===== Sanity check geometrie =====
     warnings = []
+    geom_ratio = None
     plocha_celk = (float(zast) * podlazi) if zast else (float(uzit) if uzit else None)
     if plocha_celk and obvod_m:
         plocha_1np = plocha_celk / podlazi
-        ratio = obvod_m / (4 * math.sqrt(plocha_1np)) if plocha_1np > 0 else None
-        if ratio and ratio > 1.5:
+        geom_ratio = obvod_m / (4 * math.sqrt(plocha_1np)) if plocha_1np > 0 else None
+        if geom_ratio and geom_ratio > 1.5:
             warnings.append(f"Obvod {obvod_m:.0f} m je vysoký na plochu ~{plocha_1np:.0f} m² "
-                            f"(pomer {ratio:.2f}). Over, či AI nezdvojnásobila obvod / dom je členitý.")
-        elif ratio and ratio < 0.7:
+                            f"(pomer {geom_ratio:.2f}). Over, či AI nezdvojnásobila obvod / dom je členitý.")
+        elif geom_ratio and geom_ratio < 0.7:
             warnings.append(f"Obvod {obvod_m:.0f} m je nízky na plochu ~{plocha_1np:.0f} m² "
-                            f"(pomer {ratio:.2f}). Over, či AI prečítala celý obrys.")
+                            f"(pomer {geom_ratio:.2f}). Over, či AI prečítala celý obrys.")
     if pricky_m and obvod_m and pricky_m > obvod_m * 1.5:
         warnings.append("Dĺžka priečok je nezvyčajne vysoká voči obvodu — over odhad priečok.")
+
+    # počet podlaží sa z jedného pôdorysu 1.NP NEDÁ spoľahlivo zistiť → tichý default 1 = až 2× chyba ceny.
+    if podlazi <= 1:
+        if params.get("ma_schodiste"):
+            warnings.append("Na výkrese je SCHODIŠTĚ → dům má pravděpodobně víc podlaží, ale počítáme "
+                            "s 1. Nastavte počet podlaží — cena zdiva se násobí počtem podlaží.")
+        else:
+            warnings.append("Počítáme s 1 nadzemním podlažím. Má dům patro nebo obytné podkroví? "
+                            "Upravte počet podlaží níže — cena zdiva se počtem podlaží násobí.")
 
     # ===== Robustný odhad úžitnej plochy pre cross-check =====
     uz = None
@@ -249,10 +264,20 @@ def calculate(params: dict) -> dict:
             warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne 30–45 %). Over hrúbku a triedu "
                             "— nie je v hrúbke započítané zateplenie? Nie je zvolená drahšia trieda než treba?")
         elif podiel and podiel < LOW_SHARE_PCT:
-            up_extra = UNDERCOUNT_UP
-            warnings.append(f"⚠ Zdivo je len ~{podiel} % hrubej stavby (bežne 30–45 %) — pravdepodobne sa "
-                            "z výkresu nepodarilo prečítať všetky steny (napr. garáž alebo vnútorné nosné "
-                            "steny). Reálna cena môže byť VYŠŠIA — skontroluj/dorovnaj dĺžky stien nižšie.")
+            # Nízky podiel sám osebe ešte neznamená chybu — lacná TENKÁ stavba ho má prirodzene.
+            # Rozšír hore + ostro varuj LEN keď je aj GEOMETRICKÝ signál chýbajúcich stien:
+            # chýbajú vnútorné nosné pri väčšom dome, alebo obvod vyšiel nízky na plochu.
+            chyba_stien = (nosne_m == 0 and plocha_celk and plocha_celk > 120) \
+                          or (geom_ratio is not None and geom_ratio < 0.85)
+            if chyba_stien:
+                up_extra = UNDERCOUNT_UP
+                warnings.append(f"⚠ Zdivo je len ~{podiel} % hrubej stavby (bežne 30–45 %) a geometria "
+                                "napovedá, že sa z výkresu nepodarilo prečítať všetky steny (napr. garáž "
+                                "alebo vnútorné nosné). Reálna cena môže byť VYŠŠIA — dorovnaj dĺžky nižšie.")
+            else:
+                warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne 30–45 %). Ak je to lacná/tenká "
+                                "stavba (tenké zdivo), môže to sedieť; ak má dom navyše garáž či vnútorné "
+                                "nosné steny, over/dorovnaj dĺžky stien nižšie.")
 
     # finálne rozpätie: dole symetricky, hore prípadne širšie (riziko podčítania stien)
     lo = round(zdivo_total * (1 - band))

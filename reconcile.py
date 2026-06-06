@@ -31,7 +31,7 @@ TOL_OBVOD = 0.08     # nad tým flagni obvod (občasný výbuch na ~14 %)
 TOL_THICK = 0.15
 
 # --- Eskalácia na Opus víziu (drahé, len keď sa to oplatí) ---
-ESCALATE_CONF = 70           # pod touto Geminiho confidence over druhým čítaním
+ESCALATE_CONF = 60           # pod touto Geminiho confidence over druhým čítaním (70 eskalovalo aj solídne výkresy)
 ESCALATE_MODEL = "claude-opus-4-8"   # na obvode ≈ Gemini ≈ pravda; Sonnet NIE
 
 
@@ -115,7 +115,9 @@ def needs_escalation(g):
         plocha_1np = plocha_celk / podl
         if plocha_1np > 0:
             ratio = obvod / (4 * math.sqrt(plocha_1np))
-            if ratio > 1.5 or ratio < 0.7:
+            # horný prah zvýšený 1.5→1.8: členitý L/U/rohový dom má prirodzene vysoký pomer
+            # a Gemini ho číta správne → neeskaluj naň zbytočne drahý Opus.
+            if ratio > 1.8 or ratio < 0.7:
                 reasons.append(f"geometria nesedí (pomer {ratio:.2f})")
 
     return (len(reasons) > 0, reasons)
