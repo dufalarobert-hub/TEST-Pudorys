@@ -54,6 +54,15 @@ def quality_gate(g):
                           "vypadá to na textovou část projektu (technická zpráva apod.). "
                           "Nahrajte prosím dokument, který obsahuje půdorys, nebo rovnou "
                           "stránku s okótovaným půdorysem přízemí.")
+    # NIE JE TO PÔDORYS vôbec (auto, selfie, screenshot…): žiadne steny/kóty/miestnosti/otvory.
+    # (Platí aj pre úplne nečitateľný výkres — formulácia sedí na oba prípady.)
+    obvod0 = float(g.get("obvod_m") or 0) == 0
+    rooms = int(g.get("pocet_mistnosti") or 0)
+    openings = int(g.get("pocet_oken") or 0) + int(g.get("pocet_dveri") or 0)
+    if obvod0 and koty == 0 and rooms == 0 and openings == 0:
+        return "REFUSE", ("Na nahraném obrázku jsme nenašli půdorys domu — žádné stěny, kóty "
+                          "ani místnosti. Vypadá to, že to není výkres půdorysu. Nahrajte "
+                          "prosím okótovaný půdorys přízemí (1.NP). Viz návod, jaký půdorys nahrát.")
     return "REFUSE", ("Tento půdorys neumíme spolehlivě změřit — chybí čitelné kóty "
                       "(celkové rozměry domu). Nahrajte prosím okótovaný půdorys celého "
                       "podlaží ve vyšším rozlišení. Viz návod, jaký půdorys nahrát.")
