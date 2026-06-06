@@ -274,7 +274,9 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
           onClick={()=>recalc({tier:t.k})}>
           <div className="nm">{t.nm}</div><div className="ds">{t.ds}</div></button>)}
       </div>
-      {r.ma_zateplenie
+      {r.zdivo_zdroj==='legenda' && r.obvod_material
+        ? <p className="muted" style={{marginTop:10,marginBottom:0}}>📋 Materiál zdiva jsme přečetli přímo z dokumentu: <b>{r.obvod_material}</b> → zařazeno do třídy <b>{r.tier_popis}</b>. Můžete změnit.{r.ma_zateplenie && ' Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
+        : r.ma_zateplenie
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Stěna obsahuje <b>zateplení</b> — počítáme <b>jen zdivo</b> (tloušťka zdiva ve výkazu níže), izolaci ne. Vyberte třídu odpovídající vašemu zdivu.</p>
         : r.tier_auto && r.detected_thickness_mm
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Třída navržena podle <b>tloušťky stěny {r.detected_thickness_mm} mm</b> z výkresu — můžete změnit. Mění se jen materiál, práce je u všech tříd stejná.</p>
@@ -310,6 +312,12 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       <h3>📋 Co jsme z výkresu vyčetli</h3>
       <p className="muted" style={{marginTop:0}}>Rozměry: <b>{ex.meritko_source}</b> · spolehlivost odhadu <b style={{color:confColor}}>{ex.confidence_0_100}/100</b></p>
       <div className="conf"><i style={{width:ex.confidence_0_100+'%',background:confColor}}></i></div>
+      <p className="muted" style={{marginTop:8,marginBottom:0}}>Zdivo:{' '}
+        {r.zdivo_zdroj==='legenda'
+          ? <span>📋 z legendy materiálů{r.obvod_material && <> — <b>{r.obvod_material}</b></>}</span>
+          : r.zdivo_zdroj==='kóta'
+          ? <span>📐 tloušťka z kóty na výkrese</span>
+          : <span>≈ odhad (na výkrese neuvedeno)</span>}</p>
       {ex.note && <p className="muted" style={{fontStyle:'italic',marginTop:8,marginBottom:6}}>„{ex.note}"</p>}
       {ex.co_potvrdit&&ex.co_potvrdit.length>0 && <div><p className="muted" style={{marginTop:10,marginBottom:4}}>Doporučujeme ověřit:</p>
         <div className="chips">{ex.co_potvrdit.map((c,i)=><span key={i}>{c}</span>)}</div></div>}

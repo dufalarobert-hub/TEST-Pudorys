@@ -47,6 +47,13 @@ def quality_gate(g):
     if src in ("plochy m²", "měřítko/scale bar") and conf >= 45:
         return "WARN", ("Půdorys nemá čitelné kóty — počítám z ploch/měřítka, "
                         "výsledek je hrubší (širší rozpětí).")
+    # Projektová dokumentácia, v ktorej sme NENAŠLI pôdorys (žiadne kóty, nič na meranie)
+    # → iná príčina ako zlý pôdorys; povedz to používateľovi presne.
+    if g.get("_from_project") and float(g.get("obvod_m") or 0) == 0 and koty == 0:
+        return "REFUSE", ("V nahraném dokumentu jsme nenašli půdorys (výkres 1.NP s kótami) — "
+                          "vypadá to na textovou část projektu (technická zpráva apod.). "
+                          "Nahrajte prosím dokument, který obsahuje půdorys, nebo rovnou "
+                          "stránku s okótovaným půdorysem přízemí.")
     return "REFUSE", ("Tento půdorys neumíme spolehlivě změřit — chybí čitelné kóty "
                       "(celkové rozměry domu). Nahrajte prosím okótovaný půdorys celého "
                       "podlaží ve vyšším rozlišení. Viz návod, jaký půdorys nahrát.")
