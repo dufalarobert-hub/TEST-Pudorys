@@ -70,9 +70,11 @@ def calculate(params: dict) -> dict:
     # samostatné zateplenie — tieto dve veci si protirečia.)
     if zatepl and obvod_t and float(obvod_t) > 375:
         obvod_t = 300
-    # auto-výber triedy z hrúbky LEN ak je hrúbka spoľahlivá (z kóty)
-    tier_key, tier_auto = _tier_key(params.get("tier") or params.get("system"),
-                                    obvod_t if z_koty else None)
+    # PRIORITA triedy: user explicit > MATERIÁL Z LEGENDY > heuristika z hrúbky > stredne
+    legend_tier = params.get("obvod_material_trieda")
+    user_tier = params.get("tier") or params.get("system")
+    tier_key, tier_auto = _tier_key(user_tier or legend_tier, obvod_t if z_koty else None)
+    tier_from_legend = bool(legend_tier and not user_tier)
     tier = _CFG["obvodove_tiery"][tier_key]
     pt = _CFG["priecky_tier"]
     po = _CFG["praca_obvod"]
@@ -251,6 +253,9 @@ def calculate(params: dict) -> dict:
         "tier": tier_key,
         "tier_popis": tier["popis"],
         "tier_auto": tier_auto,
+        "tier_from_legend": tier_from_legend,
+        "obvod_material": params.get("obvod_material"),
+        "zdivo_zdroj": params.get("zdivo_zdroj"),
         "ma_zateplenie": zatepl,
         "detected_thickness_mm": int(obvod_th) if obvod_th_read else None,
         "neobsahuje": _CFG["neobsahuje"],
@@ -274,6 +279,8 @@ def calculate(params: dict) -> dict:
             "confidence_0_100": conf, "tier": tier_key,
             "obvod_tloustka_mm": int(obvod_t) if obvod_t else None,
             "tloustka_z_koty": z_koty, "ma_zateplenie": zatepl,
+            "obvod_material_trieda": legend_tier, "obvod_material": params.get("obvod_material"),
+            "zdivo_zdroj": params.get("zdivo_zdroj"),
             "uzitna_plocha_m2": uzit, "zastavena_plocha_m2": zast,
             "model_uncertainty": model_unc,
         },

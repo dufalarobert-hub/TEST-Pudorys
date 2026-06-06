@@ -28,6 +28,11 @@ MAX_SIDE_PX = 2200      # downscale aby sme nezahltili request
 EXTRACTION_PROMPT = r"""Jsi expert na stavební rozpočty a čtení půdorysů rodinných domů.
 Dostáváš jednu nebo více stránek projektu RD (může mezi nimi být zakótovaný půdorys i parametrický popis).
 
+ZÁSADA: dokumenty jsou RŮZNÉ (jiný architekt, software, formát, jazyk, zkratky). Čti je
+VÝZNAMOVĚ — rozuměj tomu, CO na výkresu je (rozměry, materiál, plochy, otvory), a vytěž
+maximum z toho, co je k dispozici. NEspoléhej na konkrétní vzory/formáty; příklady níže
+jsou jen ILUSTRACE, ne pravidla. Co není v dokumentu, nevymýšlej — vrať null a sniž confidence.
+
 Tvůj úkol: z výkresu vyčíst data potřebná pro odhad ceny HRUBÉ STAVBY (zdivo).
 
 POSTUP:
@@ -56,6 +61,22 @@ POSTUP:
    a nastav tloustka_z_koty=true. POZOR: pokud je obvodová stěna ŠRAFOVANÁ (křížkové
    šrafy = složená stěna s izolací) a kóta je velká (450-550 mm), je to nejspíš
    ZDIVO+ZATEPLENÍ — odhadni tloušťku samotného zdiva (~300-375) a ma_zateplenie=true.
+4b. MATERIÁL OBVODOVÉHO ZDIVA (je-li v dokumentu uveden — je to NEJSPOLEHLIVĚJŠÍ údaj, VYTĚŽ ho):
+   Specifikace materiálu může být KDEKOLIV a JAKKOLIV zapsaná — legenda materiálů, skladba stěny,
+   popiska/odkaz u stěny, tabulka, technická zpráva, poznámka. Čti VÝZNAMOVĚ: pochop, z ČEHO je
+   OBVODOVÁ nosná stěna a jakou má tloušťku, bez ohledu na konkrétní formát, značku či jazyk.
+   Materiál ZAŘAĎ do cenové třídy (obvod_material_trieda) podle jeho POVAHY (ne podle názvu):
+     - "lacne"   = základní / levnější zdicí bloky
+     - "stredne" = běžné nosné zdivo (běžná keramika nebo pórobeton standardní hustoty)
+     - "drahe"   = jednovrstvý TEPELNĚIZOLAČNÍ blok (plněný izolací / nízká λ, nepotřebuje
+                   samostatné zateplení)
+   Je-li u obvodové stěny uvedena samostatná vrstva TEPELNÉ IZOLACE (jakákoliv) → ma_zateplenie=true
+   (zdivo = jen nosný blok, ne celá skladba).
+   (Jen ILUSTRACE zápisu, NE vyčerpávající seznam: "cihelné bloky 300", "Ytong Standard 300",
+   "Porotherm 44 T Profi", "tvárnice P+D 240".)
+   Vyplň obvod_material (co jsi přečetl), obvod_material_trieda a zdivo_zdroj.
+   Když materiál nikde NENÍ → obvod_material=null, obvod_material_trieda=null,
+   zdivo_zdroj = "kóta" (máš-li tloušťku z kót) nebo "odhad".
 5. PLOCHA (důležité pro cross-check): Pokud jsou u místností popsané plochy
    (např. "Obývací pokoj 43,56 m²", "Ložnice 12,26 m²"), SEČTI je všechny do
    uzitna_plocha_m2 a vrať i jejich seznam. Terasu/balkon do užitné NEpočítej.
@@ -69,7 +90,10 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "obvod_m": <číslo>,
   "obvod_tloustka_mm": <číslo>,
   "tloustka_z_koty": <true/false — je tloušťka NOSNÉ TVÁRNICE dána výslovně (kóta tloušťky NEBO typ tvárnice v legendě, např. "Ytong 300")? true jen pokud to vidíš; jinak false (vizuální odhad)>,
-  "ma_zateplenie": <true/false — je u obvodové stěny uvedeno zateplení / tepelná izolace (skladba typu blok + izolace)? jen informativní>,
+  "ma_zateplenie": <true/false — je u obvodové stěny uvedena samostatná vrstva tepelné izolace / zateplení?>,
+  "obvod_material": <string: materiál obvodového zdiva přečtený z dokumentu (legenda/skladba/popis), nebo null>,
+  "obvod_material_trieda": "lacne" | "stredne" | "drahe" | null,
+  "zdivo_zdroj": "legenda" | "kóta" | "odhad",
   "vnitrni_nosne_m": <součet délek vnitřních NOSNÝCH stěn v m, 0 pokud žádné>,
   "vnitrni_nosne_tloustka_mm": <číslo nebo null>,
   "pricky_m": <číslo>,
@@ -260,6 +284,10 @@ def _normalize(d: dict) -> dict:
         "obvod_tloustka_mm": int(_num(d.get("obvod_tloustka_mm"), 300) or 300),
         "tloustka_z_koty": bool(d.get("tloustka_z_koty")),
         "ma_zateplenie": bool(d.get("ma_zateplenie")),
+        "obvod_material": d.get("obvod_material") or None,
+        "obvod_material_trieda": (d.get("obvod_material_trieda")
+                                  if d.get("obvod_material_trieda") in ("lacne", "stredne", "drahe") else None),
+        "zdivo_zdroj": d.get("zdivo_zdroj") or ("kóta" if d.get("tloustka_z_koty") else "odhad"),
         "vnitrni_nosne_m": _num(d.get("vnitrni_nosne_m"), 0) or 0,
         "vnitrni_nosne_tloustka_mm": int(_num(d.get("vnitrni_nosne_tloustka_mm"), 250) or 250),
         "pricky_m": _num(d.get("pricky_m"), 0) or 0,
