@@ -318,6 +318,9 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
           : r.zdivo_zdroj==='kóta'
           ? <span>📐 tloušťka z kóty na výkrese</span>
           : <span>≈ odhad (na výkrese neuvedeno)</span>}</p>
+      {r.pricky_geom_m!=null && r.pricky_zdroj && r.pricky_zdroj.indexOf('plochy')>-1 &&
+        <p className="muted" style={{marginTop:6,marginBottom:0}}>📐 Příčky jsme upřesnili z <b>ploch místností</b> (geometrie):
+          vizuální odhad {r.pricky_ai_m} m · výpočet z ploch {r.pricky_geom_m} m → počítáme {r.used_params.pricky_m} m.</p>}
       {ex.note && <p className="muted" style={{fontStyle:'italic',marginTop:8,marginBottom:6}}>„{ex.note}"</p>}
       {ex.co_potvrdit&&ex.co_potvrdit.length>0 && <div><p className="muted" style={{marginTop:10,marginBottom:4}}>Doporučujeme ověřit:</p>
         <div className="chips">{ex.co_potvrdit.map((c,i)=><span key={i}>{c}</span>)}</div></div>}
