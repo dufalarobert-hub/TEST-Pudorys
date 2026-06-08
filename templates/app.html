@@ -283,6 +283,22 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       </div>
     </div>
 
+    {/* VARIANTA SKLADBY STĚNY — když si nejsme jistí (500 mm = plné zdivo vs zdivo+zateplení) */}
+    {r.assumed_skladba && r.skladba_variants &&
+      <div className="card">
+        <h3>Skladba obvodové stěny <span style={{fontWeight:400,color:'#b8860b',fontSize:14}}>· nejisté</span></h3>
+        <p className="muted" style={{marginTop:0}}>Na výkresu je stěna <b>{r.stena_mm_raw} mm</b>, ale <b>není uvedeno</b>, kolik z toho je nosné zdivo a kolik zateplení. Nebyli jsme si jistí — proto ukazujeme <b>obě varianty</b>. Vyberte tu, která odpovídá skutečnosti (najdete v řezu / projektu):</p>
+        <div className="seg">
+          {[['zateplene','Zdivo + zateplení','~300 mm zdiva + izolace',r.skladba_variants.zateplene],
+            ['plne','Plné zdivo','celých '+r.stena_mm_raw+' mm zdiva',r.skladba_variants.plne]].map(([k,nm,ds,vv])=>
+            <button key={k} className={(form.skladba_volba||'zateplene')===k?'on':''} disabled={loading}
+              onClick={()=>recalc({skladba_volba:k})}>
+              <div className="nm">{nm}</div><div className="ds">{ds}</div>
+              <div style={{marginTop:6,fontWeight:700,fontSize:15}}>{fmt(vv.zdivo_total)} Kč</div></button>)}
+        </div>
+        <p className="muted" style={{marginTop:10,marginBottom:0,fontSize:13}}>Rozdíl je <b>{fmt(Math.abs(r.skladba_variants.plne.zdivo_total-r.skladba_variants.zateplene.zdivo_total))} Kč</b> — proto se vyplatí ověřit typ zdiva. Většina novostaveb je „zdivo + zateplení".</p>
+      </div>}
+
     {/* TIER SELECTOR */}
     <div className="card">
       <h3>Cenová třída zdiva</h3>
@@ -293,8 +309,6 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       </div>
       {r.zdivo_zdroj==='legenda' && r.obvod_material
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>📋 Materiál zdiva jsme přečetli přímo z dokumentu: <b>{r.obvod_material}</b> → zařazeno do třídy <b>{r.tier_popis}</b>. Můžete změnit.{r.ma_zateplenie && ' Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
-        : r.assumed_skladba
-        ? <p className="muted" style={{marginTop:10,marginBottom:0}}>⚠️ Předpokládáme, že stěna <b>{r.stena_mm_raw} mm</b> = zdivo + zateplení (skladba na výkresu <b>není</b>). Počítáme jen zdivo (~{r.detected_thickness_mm||300} mm). Pokud je to <b>plné zdivo</b>, nastavte třídu/tloušťku podle skutečnosti — cena bude vyšší.</p>
         : r.ma_zateplenie
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Stěna obsahuje <b>zateplení</b> — počítáme <b>jen zdivo</b> (tloušťka zdiva ve výkazu níže), izolaci ne. Vyberte třídu odpovídající vašemu zdivu.</p>
         : r.tier_auto && r.detected_thickness_mm
@@ -337,8 +351,6 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
           : r.zdivo_zdroj==='kóta'
           ? <span>📐 tloušťka z kóty na výkrese</span>
           : <span>≈ odhad (na výkrese neuvedeno)</span>}</p>
-      {r.assumed_skladba &&
-        <p className="muted" style={{marginTop:6,marginBottom:0}}>⚠️ Stěna <b>{r.stena_mm_raw} mm</b>: rozdělení na zdivo + zateplení je <b>náš předpoklad</b> (skladba na výkresu není). Počítáme ~{r.detected_thickness_mm||300} mm zdiva — pokud je to plné zdivo, ověřte na řezu.</p>}
       {r.pricky_geom_m!=null && r.pricky_zdroj && r.pricky_zdroj.indexOf('plochy')>-1 &&
         <p className="muted" style={{marginTop:6,marginBottom:0}}>📐 Příčky jsme upřesnili z <b>ploch místností</b> (geometrie):
           vizuální odhad {r.pricky_ai_m} m · výpočet z ploch {r.pricky_geom_m} m → počítáme {r.used_params.pricky_m} m.</p>}

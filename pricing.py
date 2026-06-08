@@ -78,18 +78,22 @@ def calculate(params: dict) -> dict:
     obvod_t = params.get("obvod_tloustka_mm")
     z_koty = bool(params.get("tloustka_z_koty"))   # je hrúbka daná VÝSLOVNOU kótou?
     zatepl = bool(params.get("ma_zateplenie"))     # stena = murivo + zateplenie?
+    ma_zateplenie_in = zatepl                       # PÔVODNÉ čítanie (zatepl sa nižšie môže zmeniť pri 'plne')
     obvod_t_raw = obvod_t                           # pôvodná hrúbka steny z výkresu (pred rozkladom skladby)
     assumed_skladba = False                         # rozdelili sme stenu→(zdivo+zateplenie) bez výslovnej skladby?
+    # Voľba skladby pri NEISTOTE: 'zateplene' = murivo ~300 + izolácia (default),
+    # 'plne' = celá hrúbka je murivo (napr. Porotherm 50T / Ytong 500). None → default zateplené.
+    skladba_volba = params.get("skladba_volba") or "zateplene"
     # SKLADANÁ STENA (deterministické pravidlo): zateplenie + veľká hrúbka (>375 mm) =
-    # murivo + izolácia. Murivo je NORMÁLNY blok (~300), NIE 450mm jednovrstvý tepelný
-    # blok → nesmie sa cenť 450 ani auto-vybrať trieda Dražší. (Tepelný blok nemá
-    # samostatné zateplenie — tieto dve veci si protirečia.)
+    # murivo + izolácia. Murivo je NORMÁLNY blok (~300), NIE 450mm jednovrstvý tepelný blok.
     if zatepl and obvod_t and float(obvod_t) > 375:
-        # Skladbu (zdivo + zateplenie) berieme ako POTVRDENÚ len keď prišla z LEGENDY/popisu.
-        # Inak je rozklad napr. 500→300+200 NÁŠ PREDPOKLAD — treba ho priznať userovi a rozšíriť
-        # rozpätie HORE (ak je to v skutočnosti plné murivo 500 mm, cena zdiva bude vyššia).
+        # Skladbu berieme ako POTVRDENÚ len keď prišla z LEGENDY/popisu. Inak je rozklad
+        # 500→300+200 NÁŠ PREDPOKLAD → priznáme ho a ponúkneme userovi OBE varianty (viď koniec).
         assumed_skladba = (params.get("zdivo_zdroj") != "legenda")
-        obvod_t = 300
+        if assumed_skladba and skladba_volba == "plne":
+            zatepl = False             # PLNÉ murivo: celá hrúbka (napr. 500) sa počíta ako tehla
+        else:
+            obvod_t = 300              # ZATEPLENÉ: murivo ~300 + izolácia (izolácia sa nepočíta)
     # PRIORITA triedy: user explicit > MATERIÁL Z LEGENDY > heuristika z hrúbky > stredne
     legend_tier = params.get("obvod_material_trieda")
     user_tier = params.get("tier") or params.get("system")
@@ -130,9 +134,11 @@ def calculate(params: dict) -> dict:
     obvod_net = max(obvod_gross - obvod_openings, 0)
     obvod_price = round(tier["kc_m3"] * obvod_th / 1000)        # Kč/m² steny pri tejto hrúbke
     obvod_mat = round(obvod_net * obvod_price)
-    if assumed_skladba:
-        obvod_th_note = (f"~{int(obvod_th)} mm zdivo (předpoklad — stěna {int(obvod_t_raw)} mm "
-                         "vč. zateplení, skladba neuvedena)")
+    if assumed_skladba and skladba_volba == "plne":
+        obvod_th_note = f"{int(obvod_th)} mm plné zdivo (varianta — bez zateplení)"
+    elif assumed_skladba:
+        obvod_th_note = (f"~{int(obvod_th)} mm zdivo (varianta — stěna {int(obvod_t_raw)} mm "
+                         "vč. zateplení)")
     elif zatepl:
         obvod_th_note = f"{int(obvod_th)} mm zdivo (+ zateplení)"
     elif obvod_th_read:
@@ -266,17 +272,10 @@ def calculate(params: dict) -> dict:
     warnings = []
     geom_ratio = None
 
-    # PREDPOKLAD SKLADBY STENY (priznaj ho — nevydávaj predpoklad za prečítanú hodnotu).
-    # Toto je častý zdroj chyby: výkres ukazuje napr. 500 mm stenu, ale neuvádza, koľko je
-    # zdivo a koľko zateplenie. My predpokladáme zdivo 300 + izolácia 200; ak je to plné
-    # murivo 500, cena zdiva je výrazne vyššia → priznaj a rozšír band hore.
-    if assumed_skladba:
-        warnings.append(
-            f"Stěna má na výkresu ~{int(obvod_t_raw)} mm, ale skladba (kolik je zdivo a kolik "
-            f"zateplení) tam určená NENÍ. PŘEDPOKLÁDÁME {int(obvod_th)} mm zdivo + zateplení "
-            f"(běžné u zateplených domů). Pokud jde o PLNÉ zdivo {int(obvod_t_raw)} mm bez "
-            "samostatného zateplení, bude cena zdiva výrazně vyšší — ověřte na řezu / ve skladbě konstrukcí.")
-        up_extra = max(up_extra, 0.10)   # riziko podčítania (plné murivo) → širšie rozpätie HORE
+    # PREDPOKLAD SKLADBY STENY: výkres má napr. 500 mm stenu, ale neuvádza, koľko je zdivo a
+    # koľko zateplenie. Namiesto tichého hádania ponúkneme userovi OBE varianty (zateplené ~300
+    # vs plné 500) ako prepínač s oboma cenami — viď koniec funkcie (skladba_variants). Žiadne
+    # skryté rozšírenie pásma ani dlhé varovanie tu netreba.
 
     # KONTROLA OTVOROV: AI ich z pôdorysu často PODCENÍ (hlavne veľké presklenia a garážové
     # vráta ~10–12 m²). Podcenené otvory = umelo viac steny = vyššia cena. Hrubý orientačný test
@@ -384,7 +383,7 @@ def calculate(params: dict) -> dict:
     hi = round(zdivo_total * (1 + band + up_extra))
     band_pct = round((hi - lo) / (2 * zdivo_total) * 100) if zdivo_total else 0
 
-    return {
+    result = {
         "tier": tier_key,
         "tier_popis": tier["popis"],
         "tier_auto": tier_auto,
@@ -393,6 +392,7 @@ def calculate(params: dict) -> dict:
         "zdivo_zdroj": params.get("zdivo_zdroj"),
         "ma_zateplenie": zatepl,
         "assumed_skladba": assumed_skladba,
+        "skladba_volba": skladba_volba if assumed_skladba else None,
         "stena_mm_raw": int(obvod_t_raw) if obvod_t_raw else None,
         "detected_thickness_mm": int(obvod_th) if obvod_th_read else None,
         "neobsahuje": _CFG["neobsahuje"],
@@ -419,15 +419,31 @@ def calculate(params: dict) -> dict:
             "vnitrni_nosne_m": nosne_m, "vnitrni_nosne_tloustka_mm": int(nosne_th),
             "pocet_podlazi": podlazi, "pocet_oken": okna, "pocet_dveri": dvere,
             "confidence_0_100": conf, "tier": tier_key,
-            "obvod_tloustka_mm": int(obvod_t) if obvod_t else None,
-            "tloustka_z_koty": z_koty, "ma_zateplenie": zatepl,
+            "obvod_tloustka_mm": int(obvod_t_raw) if obvod_t_raw else None,  # PÔVODNÁ hrúbka (round-trip)
+            "tloustka_z_koty": z_koty, "ma_zateplenie": ma_zateplenie_in,
             "obvod_material_trieda": legend_tier, "obvod_material": params.get("obvod_material"),
             "zdivo_zdroj": params.get("zdivo_zdroj"),
             "uzitna_plocha_m2": uzit, "zastavena_plocha_m2": zast,
             "plochy_mistnosti_m2": rooms, "_floors_summed": floors_summed,
             "model_uncertainty": model_unc,
+            "skladba_volba": skladba_volba if assumed_skladba else None,
         },
     }
+
+    # DVE VARIANTY SKLADBY (len keď je rozklad steny NÁŠ predpoklad): spočítaj obe ceny tým
+    # ISTÝM kódom (rekurzia s _no_variant proti zacykleniu), nech ich user vidí a prepne.
+    if assumed_skladba and not params.get("_no_variant"):
+        variants = {}
+        for v in ("zateplene", "plne"):
+            sub = dict(params)
+            sub["skladba_volba"] = v
+            sub["_no_variant"] = True
+            rv = calculate(sub)
+            variants[v] = {"zdivo_total": rv["zdivo_total"], "range_lo": rv["range_lo"],
+                           "range_hi": rv["range_hi"], "obvod_th": rv["detected_thickness_mm"]}
+        result["skladba_variants"] = variants
+
+    return result
 
 
 def _item(name, detail, qty, unit, price, total):
