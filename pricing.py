@@ -78,11 +78,17 @@ def calculate(params: dict) -> dict:
     obvod_t = params.get("obvod_tloustka_mm")
     z_koty = bool(params.get("tloustka_z_koty"))   # je hrúbka daná VÝSLOVNOU kótou?
     zatepl = bool(params.get("ma_zateplenie"))     # stena = murivo + zateplenie?
+    obvod_t_raw = obvod_t                           # pôvodná hrúbka steny z výkresu (pred rozkladom skladby)
+    assumed_skladba = False                         # rozdelili sme stenu→(zdivo+zateplenie) bez výslovnej skladby?
     # SKLADANÁ STENA (deterministické pravidlo): zateplenie + veľká hrúbka (>375 mm) =
     # murivo + izolácia. Murivo je NORMÁLNY blok (~300), NIE 450mm jednovrstvý tepelný
     # blok → nesmie sa cenť 450 ani auto-vybrať trieda Dražší. (Tepelný blok nemá
     # samostatné zateplenie — tieto dve veci si protirečia.)
     if zatepl and obvod_t and float(obvod_t) > 375:
+        # Skladbu (zdivo + zateplenie) berieme ako POTVRDENÚ len keď prišla z LEGENDY/popisu.
+        # Inak je rozklad napr. 500→300+200 NÁŠ PREDPOKLAD — treba ho priznať userovi a rozšíriť
+        # rozpätie HORE (ak je to v skutočnosti plné murivo 500 mm, cena zdiva bude vyššia).
+        assumed_skladba = (params.get("zdivo_zdroj") != "legenda")
         obvod_t = 300
     # PRIORITA triedy: user explicit > MATERIÁL Z LEGENDY > heuristika z hrúbky > stredne
     legend_tier = params.get("obvod_material_trieda")
@@ -124,7 +130,10 @@ def calculate(params: dict) -> dict:
     obvod_net = max(obvod_gross - obvod_openings, 0)
     obvod_price = round(tier["kc_m3"] * obvod_th / 1000)        # Kč/m² steny pri tejto hrúbke
     obvod_mat = round(obvod_net * obvod_price)
-    if zatepl:
+    if assumed_skladba:
+        obvod_th_note = (f"~{int(obvod_th)} mm zdivo (předpoklad — stěna {int(obvod_t_raw)} mm "
+                         "vč. zateplení, skladba neuvedena)")
+    elif zatepl:
         obvod_th_note = f"{int(obvod_th)} mm zdivo (+ zateplení)"
     elif obvod_th_read:
         obvod_th_note = f"{int(obvod_th)} mm"
@@ -256,6 +265,31 @@ def calculate(params: dict) -> dict:
     # ===== Sanity check geometrie =====
     warnings = []
     geom_ratio = None
+
+    # PREDPOKLAD SKLADBY STENY (priznaj ho — nevydávaj predpoklad za prečítanú hodnotu).
+    # Toto je častý zdroj chyby: výkres ukazuje napr. 500 mm stenu, ale neuvádza, koľko je
+    # zdivo a koľko zateplenie. My predpokladáme zdivo 300 + izolácia 200; ak je to plné
+    # murivo 500, cena zdiva je výrazne vyššia → priznaj a rozšír band hore.
+    if assumed_skladba:
+        warnings.append(
+            f"Stěna má na výkresu ~{int(obvod_t_raw)} mm, ale skladba (kolik je zdivo a kolik "
+            f"zateplení) tam určená NENÍ. PŘEDPOKLÁDÁME {int(obvod_th)} mm zdivo + zateplení "
+            f"(běžné u zateplených domů). Pokud jde o PLNÉ zdivo {int(obvod_t_raw)} mm bez "
+            "samostatného zateplení, bude cena zdiva výrazně vyšší — ověřte na řezu / ve skladbě konstrukcí.")
+        up_extra = max(up_extra, 0.10)   # riziko podčítania (plné murivo) → širšie rozpätie HORE
+
+    # KONTROLA OTVOROV: AI ich z pôdorysu často PODCENÍ (hlavne veľké presklenia a garážové
+    # vráta ~10–12 m²). Podcenené otvory = umelo viac steny = vyššia cena. Hrubý orientačný test
+    # podľa plochy podlažia (úžitná 1.NP). Soft upozornenie — nech to user prekontroluje.
+    uzit_1np = float(uzit) if uzit else None
+    if uzit_1np and uzit_1np > 40:
+        exp_okna = uzit_1np / 14.0       # orientačne ~1 okno na 14 m² podlahy
+        if okna < 0.55 * exp_okna:
+            warnings.append(
+                f"Otvorů se zdá málo (okna {okna}, dveře {dvere}) na plochu ~{uzit_1np:.0f} m². "
+                "AI je z půdorysu často podcení — hlavně velká prosklení a GARÁŽOVÁ VRATA "
+                "(~10–12 m²!), která se do otvorů nemusela započítat. Zkontrolujte počet "
+                "oken/dveří níže (víc otvorů = míň zdiva = nižší cena).")
     # POZOR: úžitná aj zastavaná sú plochy JEDNÉHO podlažia (úžitná = súčet miestností 1.NP) →
     # pre CELÚ budovu (konzistentne so zdivom, ktoré je × podlazi) ich treba vynásobiť podlažiami.
     # Pri multi-fóto (každé podlažie samostatná fotka) je obvod aj plocha už SÚČET za n podlaží.
@@ -358,6 +392,8 @@ def calculate(params: dict) -> dict:
         "obvod_material": params.get("obvod_material"),
         "zdivo_zdroj": params.get("zdivo_zdroj"),
         "ma_zateplenie": zatepl,
+        "assumed_skladba": assumed_skladba,
+        "stena_mm_raw": int(obvod_t_raw) if obvod_t_raw else None,
         "detected_thickness_mm": int(obvod_th) if obvod_th_read else None,
         "neobsahuje": _CFG["neobsahuje"],
         "items": items,

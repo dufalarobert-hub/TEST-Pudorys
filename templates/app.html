@@ -271,6 +271,16 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       <div className="warn" style={{marginTop:16}}>🚩 <b>Kontrola geometrie:</b>
         <ul style={{margin:'8px 0 0',paddingLeft:20}}>{r.warnings.map((w,i)=><li key={i}>{w}</li>)}</ul></div>}
 
+    {/* DRUHÝ NÁZOR — nezávislý AI kritik (běží i u sebevědomého čtení) */}
+    {cl && cl.available && ((cl.issues&&cl.issues.length>0) || cl.summary) &&
+      <div className="card claude" style={{marginTop:16}}>
+        <h3 style={{marginTop:0}}>🔍 Druhý názor — nezávislá AI kontrola</h3>
+        {cl.issues && cl.issues.length>0
+          ? <ul style={{margin:'4px 0 0',paddingLeft:20}}>{cl.issues.map((s,i)=><li key={i}>{s}</li>)}</ul>
+          : <p className="muted" style={{margin:0}}>Bez vážných nálezů — parametry vypadají konzistentně.</p>}
+        {cl.summary && <p className="muted" style={{marginTop:8,marginBottom:0}}>{cl.summary}</p>}
+      </div>}
+
     {/* HERO */}
     <div className="card hero">
       <div className="lab">🧱 Hrubé zdivo (materiál + práce) · {r.tier_popis}</div>
@@ -293,6 +303,8 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       </div>
       {r.zdivo_zdroj==='legenda' && r.obvod_material
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>📋 Materiál zdiva jsme přečetli přímo z dokumentu: <b>{r.obvod_material}</b> → zařazeno do třídy <b>{r.tier_popis}</b>. Můžete změnit.{r.ma_zateplenie && ' Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
+        : r.assumed_skladba
+        ? <p className="muted" style={{marginTop:10,marginBottom:0}}>⚠️ Předpokládáme, že stěna <b>{r.stena_mm_raw} mm</b> = zdivo + zateplení (skladba na výkresu <b>není</b>). Počítáme jen zdivo (~{r.detected_thickness_mm||300} mm). Pokud je to <b>plné zdivo</b>, nastavte třídu/tloušťku podle skutečnosti — cena bude vyšší.</p>
         : r.ma_zateplenie
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Stěna obsahuje <b>zateplení</b> — počítáme <b>jen zdivo</b> (tloušťka zdiva ve výkazu níže), izolaci ne. Vyberte třídu odpovídající vašemu zdivu.</p>
         : r.tier_auto && r.detected_thickness_mm
@@ -335,6 +347,8 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
           : r.zdivo_zdroj==='kóta'
           ? <span>📐 tloušťka z kóty na výkrese</span>
           : <span>≈ odhad (na výkrese neuvedeno)</span>}</p>
+      {r.assumed_skladba &&
+        <p className="muted" style={{marginTop:6,marginBottom:0}}>⚠️ Stěna <b>{r.stena_mm_raw} mm</b>: rozdělení na zdivo + zateplení je <b>náš předpoklad</b> (skladba na výkresu není). Počítáme ~{r.detected_thickness_mm||300} mm zdiva — pokud je to plné zdivo, ověřte na řezu.</p>}
       {r.pricky_geom_m!=null && r.pricky_zdroj && r.pricky_zdroj.indexOf('plochy')>-1 &&
         <p className="muted" style={{marginTop:6,marginBottom:0}}>📐 Příčky jsme upřesnili z <b>ploch místností</b> (geometrie):
           vizuální odhad {r.pricky_ai_m} m · výpočet z ploch {r.pricky_geom_m} m → počítáme {r.used_params.pricky_m} m.</p>}
