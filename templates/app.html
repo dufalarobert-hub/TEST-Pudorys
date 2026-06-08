@@ -287,10 +287,10 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
     {r.assumed_skladba && r.skladba_variants &&
       <div className="card">
         <h3>Skladba obvodové stěny <span style={{fontWeight:400,color:'#b8860b',fontSize:14}}>· nejisté</span></h3>
-        <p className="muted" style={{marginTop:0}}>Na výkresu je stěna <b>{r.stena_mm_raw} mm</b>, ale <b>není uvedeno</b>, kolik z toho je nosné zdivo a kolik zateplení. Nebyli jsme si jistí — proto ukazujeme <b>obě varianty</b>. Vyberte tu, která odpovídá skutečnosti (najdete v řezu / projektu):</p>
+        <p className="muted" style={{marginTop:0}}>Stěna má <b>zateplení</b>, ale na výkresu <b>není uvedeno</b>, kolik z tloušťky je nosné zdivo a kolik izolace. Nebyli jsme si jistí — proto počítáme <b>obě varianty</b>. Vyberte tu, která odpovídá skutečnosti (najdete v řezu / skladbě):</p>
         <div className="seg">
-          {[['zateplene','Zdivo + zateplení','~300 mm zdiva + izolace',r.skladba_variants.zateplene],
-            ['plne','Plné zdivo','celých '+r.stena_mm_raw+' mm zdiva',r.skladba_variants.plne]].map(([k,nm,ds,vv])=>
+          {[['zateplene','Zdivo + zateplení','~'+(r.skladba_variants.zateplene.obvod_th||300)+' mm zdiva + izolace',r.skladba_variants.zateplene],
+            ['plne','Plné zdivo','~'+(r.skladba_variants.plne.obvod_th||500)+' mm zdiva (bez izolace)',r.skladba_variants.plne]].map(([k,nm,ds,vv])=>
             <button key={k} className={(form.skladba_volba||'zateplene')===k?'on':''} disabled={loading}
               onClick={()=>recalc({skladba_volba:k})}>
               <div className="nm">{nm}</div><div className="ds">{ds}</div>
@@ -299,9 +299,10 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
         <p className="muted" style={{marginTop:10,marginBottom:0,fontSize:13}}>Rozdíl je <b>{fmt(Math.abs(r.skladba_variants.plne.zdivo_total-r.skladba_variants.zateplene.zdivo_total))} Kč</b> — proto se vyplatí ověřit typ zdiva. Většina novostaveb je „zdivo + zateplení".</p>
       </div>}
 
-    {/* TŘÍDA ZDIVA — DYNAMICKY: prepínač sa zjaví LEN keď AI nepoznala materiál (chýba legenda).
-        Vtedy „nevím jistě, spočítal jsem varianty". Keď je materiál z legendy → istota, žiadny prepínač. */}
-    {r.tier_uncertain && r.tier_variants
+    {/* TŘÍDA ZDIVA (Levné/Střední/Dražší) — SKRYTÉ z UI (user ho nechce zobrazovať). Kód aj
+        backend ponechané (default stredne), iba sa nevykresľuje. Návrat = false && -> true &&.
+        Jediný prepínač, ktorý chceme ukazovať, je SKLADBA STĚNY (300+200 vs 500) vyššie. */}
+    {false && (r.tier_uncertain && r.tier_variants
       ? <div className="card">
           <h3>Jaké zdivo? <span style={{fontWeight:400,color:'#b8860b',fontSize:14}}>· nejisté</span></h3>
           <p className="muted" style={{marginTop:0}}>Druh zdiva (materiál) jsme z výkresu <b>nepoznali</b> — chybí legenda materiálů. Nevíme jistě, proto jsme spočítali <b>varianty</b>. Vyberte tu nejbližší vašemu zdivu:</p>
@@ -316,7 +317,7 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       : (r.zdivo_zdroj==='legenda' && r.obvod_material &&
           <div className="card">
             <p className="muted" style={{margin:0}}>📋 Materiál zdiva jsme přečetli z dokumentu: <b>{r.obvod_material}</b> → třída <b>{r.tier_popis}</b>.{r.ma_zateplenie && ' Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
-          </div>)}
+          </div>))}
 
     {/* CROSS-CHECK */}
     {cc && <div className="card cc">

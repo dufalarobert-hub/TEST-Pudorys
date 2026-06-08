@@ -84,16 +84,25 @@ def calculate(params: dict) -> dict:
     # Voľba skladby pri NEISTOTE: 'zateplene' = murivo ~300 + izolácia (default),
     # 'plne' = celá hrúbka je murivo (napr. Porotherm 50T / Ytong 500). None → default zateplené.
     skladba_volba = params.get("skladba_volba") or "zateplene"
-    # SKLADANÁ STENA (deterministické pravidlo): zateplenie + veľká hrúbka (>375 mm) =
-    # murivo + izolácia. Murivo je NORMÁLNY blok (~300), NIE 450mm jednovrstvý tepelný blok.
-    if zatepl and obvod_t and float(obvod_t) > 375:
-        # Skladbu berieme ako POTVRDENÚ len keď prišla z LEGENDY/popisu. Inak je rozklad
-        # 500→300+200 NÁŠ PREDPOKLAD → priznáme ho a ponúkneme userovi OBE varianty (viď koniec).
-        assumed_skladba = (params.get("zdivo_zdroj") != "legenda")
-        if assumed_skladba and skladba_volba == "plne":
-            zatepl = False             # PLNÉ murivo: celá hrúbka (napr. 500) sa počíta ako tehla
+    # SKLADBA STENY je NEISTÁ vždy, keď má stena zateplenie a NEČÍTALI sme skladbu z legendy
+    # → nevieme, či X mm je plné murivo, alebo nosné murivo + izolácia. Ponúkni OBE varianty.
+    # (Trigger na ma_zateplenie, NIE len na hrúbku >375 — Gemini ten istý výkres číta raz 500,
+    #  raz 300, ale ma_zateplenie nastaví v oboch prípadoch; takto je prepínač spoľahlivý.)
+    _from_legend = (params.get("zdivo_zdroj") == "legenda")
+    if zatepl and not _from_legend:
+        assumed_skladba = True
+        if float(obvod_t or 0) > 375:
+            blok_mm, plna_mm = 300.0, float(obvod_t)       # Gemini dal celú stenu (napr. 500)
         else:
-            obvod_t = 300              # ZATEPLENÉ: murivo ~300 + izolácia (izolácia sa nepočíta)
+            blok_mm = float(obvod_t or 300)                # Gemini dal už nosný blok (~300)
+            plna_mm = blok_mm + 200                         # + typická izolácia ~200 → plná stena ~500
+        obvod_t_raw = plna_mm                               # "stěna ~X mm" = plná hrúbka vč. izolácie
+        if skladba_volba == "plne":
+            obvod_t, zatepl = plna_mm, False                # PLNÉ murivo: celá hrúbka = tehla
+        else:
+            obvod_t = blok_mm                               # ZATEPLENÉ: len nosný blok (izolácia sa neráta)
+    elif zatepl and obvod_t and float(obvod_t) > 375:
+        obvod_t = 300                                       # zateplenie Z LEGENDY + hrubá kóta → murivo 300
     # PRIORITA triedy: user explicit > MATERIÁL Z LEGENDY > heuristika z hrúbky > stredne
     legend_tier = params.get("obvod_material_trieda")
     user_tier = params.get("tier") or params.get("system")
