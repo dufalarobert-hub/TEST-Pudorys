@@ -299,7 +299,11 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
         <p className="muted" style={{marginTop:10,marginBottom:0,fontSize:13}}>Rozdíl je <b>{fmt(Math.abs(r.skladba_variants.plne.zdivo_total-r.skladba_variants.zateplene.zdivo_total))} Kč</b> — proto se vyplatí ověřit typ zdiva. Většina novostaveb je „zdivo + zateplení".</p>
       </div>}
 
-    {/* TIER SELECTOR */}
+    {/* TIER SELECTOR — DOČASNE SKRYTÝ z UI (kód ponechaný). Dôvod: pri čítanej hrúbke trieda
+        swingne cenu len ~10 % (práca je rovnaká pre všetky triedy), tak nemiasť usera prepínačom.
+        Backend triedu STÁLE používa (auto z legendy/hrúbky, default stredne). Zobraziť späť =
+        zmeniť `false &&` na `true &&`. */}
+    {false &&
     <div className="card">
       <h3>Cenová třída zdiva</h3>
       <div className="seg">
@@ -314,7 +318,7 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
         : r.tier_auto && r.detected_thickness_mm
         ? <p className="muted" style={{marginTop:10,marginBottom:0}}>✓ Třída navržena podle <b>tloušťky stěny {r.detected_thickness_mm} mm</b> z výkresu — můžete změnit. Mění se jen materiál, práce je u všech tříd stejná.</p>
         : <p className="muted" style={{marginTop:10,marginBottom:0}}>ℹ️ Tloušťku stěny jsme na výkrese nenašli jako kótu — počítáme s <b>typickou tloušťkou třídy (odhad)</b>. Vyberte třídu odpovídající vašemu zdivu. Mění se jen materiál, práce je stejná.</p>}
-    </div>
+    </div>}
 
     {/* CROSS-CHECK */}
     {cc && <div className="card cc">
