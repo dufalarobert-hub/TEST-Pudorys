@@ -159,11 +159,13 @@ def api_analyze():
 
     params = dict(extraction)
 
-    # === KRITIK (druhý priebeh): VŽDY — lacná text kontrola Sonnetom, ktorá cielene hľadá
-    # systémové chyby (podcenené otvory, garáž ako vykurované zdivo, predpoklad skladby steny,
-    # schodisko vs podlažia, geometria). Aj pri „sebavedomom" Gemini čítaní zbehne nezávislý
-    # skeptik. GRACEFUL: bez kľúča/kreditu vráti available=False a appka beží ďalej Gemini-only.
-    claude = claude_review.review(params)
+    # === Claude TEXT vrstva: len keď treba (Gemini nedal otvory / nízka conf) — šetrí čas+náklad.
+    # Tichý pomocník: dopĺňa chýbajúce otvory; jeho výstup sa userovi NEzobrazuje (technický).
+    need_claude = (not params.get("pocet_oken") or not params.get("pocet_dveri")
+                   or int(params.get("confidence_0_100") or 0) < 70)
+    claude = (claude_review.review(params) if need_claude
+              else {"available": False, "reason": "not_needed",
+                    "summary": "Gemini čítanie postačujúce — Claude kontrola netreba."})
     if claude.get("available"):
         for k, v in (claude.get("suggestions") or {}).items():
             if k in ("pocet_oken", "pocet_dveri") and (not params.get(k)):
