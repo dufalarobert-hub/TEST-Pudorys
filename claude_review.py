@@ -19,19 +19,26 @@ MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")  # text validácia: 
 USD_IN, USD_OUT, USD_CZK = 3.0, 15.0, 23.0
 
 
+def _clean_key(v):
+    """Odstráň VŠETKY biele znaky (vrátane zalomení riadkov uprostred). API kľúče žiadne
+    nemajú; pri vkladaní do Vercel env sa kľúč občas rozlomí na 2 riadky → httpx ho potom
+    odmietne ako 'Illegal header value'. Toto to spraví odolným."""
+    return re.sub(r"\s+", "", v) if v else v
+
+
 def _get_key():
     """ANTHROPIC_API_KEY z env (produkcia). Voliteľne lokálny .env súbor cez
     ANTHROPIC_ENV_FILE (dev). Ak nič → None a Claude vrstva sa graceful preskočí."""
     key = os.environ.get("ANTHROPIC_API_KEY")
     if key:
-        return key.strip()
+        return _clean_key(key)
     env_file = os.environ.get("ANTHROPIC_ENV_FILE")
     if env_file and os.path.exists(env_file):
         for line in open(env_file, encoding="utf-8"):
             if line.startswith("ANTHROPIC_API_KEY"):
                 v = line.split("=", 1)[1].strip().strip('"').strip("'")
                 if v:
-                    return v
+                    return _clean_key(v)
     return None
 
 
