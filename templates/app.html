@@ -148,7 +148,15 @@ function App(){
     try{
       const fd=new FormData();files.forEach(f=>fd.append('plan',f));
       const r=await fetch('/api/analyze',{method:'POST',body:fd});
-      const j=await r.json();
+      let j;
+      try{ j=await r.json(); }
+      catch(e){
+        // server nevrátil JSON (typicky timeout 60s u velkého projektu, nebo chyba serveru)
+        setError(mode==='project'
+          ? 'Zpracování dokumentace se nepodařilo dokončit (velké PDF může překročit časový limit). Zkuste nahrát jen stránku s půdorysem přízemí (1.NP) jako obrázek, nebo to zkuste znovu.'
+          : 'Server vrátil neočekávanou odpověď. Zkuste to prosím znovu, případně s menším/ostřejším obrázkem.');
+        setLoading(false);return;
+      }
       if(!j.ok){setError(j.error||'Chyba.');setData(j.gate==='REFUSE'?{refuse:j.error}:null);}
       else{setData(j);setForm({...j.params,vyska_podlazi_m:j.extraction.vyska_podlazi_m,tier:j.pricing.tier});}
     }catch(err){setError(''+err);}
