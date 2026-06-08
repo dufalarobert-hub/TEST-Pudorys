@@ -94,12 +94,22 @@ def review(extraction: dict) -> dict:
         # Bez kreditu padne rýchlo na auth chybu (nie na timeout), takže to appku nezdrží.
         client = anthropic.Anthropic(api_key=key, max_retries=1, timeout=25.0)
         resp = client.messages.create(
-            model=MODEL, max_tokens=600,
+            model=MODEL, max_tokens=1024,
             messages=[{"role": "user", "content": PROMPT.format(data=json.dumps(data, ensure_ascii=False))}],
         )
-        text = resp.content[0].text
-        m = re.search(r"\{.*\}", text, re.DOTALL)
-        out = json.loads(m.group(0) if m else text)
+        # robustné vytiahnutie textu: zober VŠETKY textové bloky (nie len content[0], ktorý
+        # nemusí byť text), zlúč a očisti ```json``` obaly. Potom nájdi JSON.
+        text = "\n".join(getattr(b, "text", "") for b in (resp.content or [])
+                         if getattr(b, "type", None) == "text").strip()
+        if not text and resp.content:
+            text = (getattr(resp.content[0], "text", "") or "").strip()
+        clean = re.sub(r"```(json)?", "", text).strip()
+        m = re.search(r"\{.*\}", clean, re.DOTALL)
+        if not m:
+            stop = getattr(resp, "stop_reason", "?")
+            return {"available": False, "reason": "bad_json",
+                    "summary": f"Claude nevrátil JSON (stop_reason={stop}): {text[:160] or '[prázdna odpoveď]'}"}
+        out = json.loads(m.group(0))
         u = resp.usage
         cost = u.input_tokens / 1e6 * USD_IN + u.output_tokens / 1e6 * USD_OUT
         out["available"] = True
