@@ -104,7 +104,13 @@ def review(extraction: dict) -> dict:
         if "credit balance" in msg.lower():
             return {"available": False, "reason": "no_credit",
                     "summary": "Claude účet nemá kredit — doplň na console.anthropic.com (Plans & Billing)."}
-        return {"available": False, "reason": "error", "summary": f"Claude chyba: {msg[:120]}"}
+        # APIConnectionError má prázdne/generické str ("Connection error.") — vytiahni REÁLNu
+        # príčinu z reťazca výnimiek (httpx ConnectError/ReadTimeout/SSLError), nech vieme diagnostikovať.
+        cause = getattr(e, "__cause__", None)
+        detail = f"{type(e).__name__}: {msg}"
+        if cause is not None:
+            detail += f" | príčina: {type(cause).__name__}: {str(cause)[:160]}"
+        return {"available": False, "reason": "error", "summary": f"Claude chyba: {detail[:260]}"}
 
 
 if __name__ == "__main__":
