@@ -82,8 +82,10 @@ def review(extraction: dict) -> dict:
 
     try:
         import anthropic
-        # max_retries=0 + timeout: keď nie je kredit, padni HNEĎ (žiadne 60s retry)
-        client = anthropic.Anthropic(api_key=key, max_retries=0, timeout=8.0)
+        # timeout dosť veľký na serverless cold-start + reálne volanie (kritik beží vždy),
+        # ale pod vercel maxDuration 60 s (Gemini časť už čosi zožerie). 1 retry na sieťový blip.
+        # Bez kreditu padne rýchlo na auth chybu (nie na timeout), takže to appku nezdrží.
+        client = anthropic.Anthropic(api_key=key, max_retries=1, timeout=25.0)
         resp = client.messages.create(
             model=MODEL, max_tokens=600,
             messages=[{"role": "user", "content": PROMPT.format(data=json.dumps(data, ensure_ascii=False))}],
