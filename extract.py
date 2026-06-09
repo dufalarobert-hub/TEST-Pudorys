@@ -21,8 +21,8 @@ from google.genai import types
 import config
 
 MAX_SCAN_PAGES = 25     # koľko strán projektovej dokumentácie prejdeme pri hľadaní pôdorysu
-RENDER_ZOOM = 3.0       # DPI faktor pre render strán
-MAX_SIDE_PX = 2200      # downscale aby sme nezahltili request
+RENDER_ZOOM = 4.0       # DPI faktor pre render strán (3.0→4.0: viac detailu na čítanie drobných kót stien)
+MAX_SIDE_PX = 3000      # downscale cap (2200→3000: čitateľnejšie kótovacie reťazce = presnejšie dĺžky stien)
 
 
 EXTRACTION_PROMPT = r"""Jsi expert na stavební rozpočty a čtení půdorysů rodinných domů.
@@ -53,9 +53,13 @@ POSTUP:
    nebo formát 34'-6"), přepočítej na metry (1' = 0,3048 m, 1" = 0,0254 m) a v note to uveď.
    Pokud je výkres focený POD ÚHLEM / pootočený / rozmazaný / ručně kreslený (ne čistý CAD),
    výrazně SNIŽ confidence a uveď to v note — kóty pak nejsou spolehlivé.
-2. Obvodové zdivo: spočítej délku vnějšího obrysu domu z celkových kót
-   (např. obdélník 11000 x 13500 mm => obvod = 2*(11+13.5) = 49 m; nebo 17.10 x 8.90 m
-   => 2*(17.1+8.9) = 52 m). U členitého (L/U) tvaru sečti všechny vnější strany.
+2. Obvodové zdivo: spočítej délku CELÉHO vnějšího obrysu domu z kót. POZORNĚ OBKROUŽI celý
+   vnější obvod a sečti VŠECHNY vnější strany — včetně garáže, přístavků, výstupků, zalomení
+   (L/U/T tvary, arkýře, ustoupení). Časté podcenění: vynechání garáže a krátkých úseků u
+   zalomení. (Příklad: obdélník 11000 x 13500 mm => 2*(11+13.5) = 49 m; L-tvar = součet všech
+   stran po obvodu.) KONTROLA SAMA SEBE: obvod nemůže být menší než obvod čtverce stejné
+   zastavěné plochy = 4*odmocnina(zastavěná plocha). Když ti vyjde méně, přehlédl jsi část
+   obvodu — projdi obrys znovu. Reálné domy mají obvod typicky 4,2-5,5 * odmocnina(plocha).
 3. VNITŘNÍ STĚNY — rozliš DVA druhy podle TLOUŠŤKY (důležité, mají různou cenu):
    a) VNITŘNÍ NOSNÉ stěny — silnější (~175-300 mm), často značené "nosná" / kreslené
       tlustě jako obvod. Součet jejich délek do "vnitrni_nosne_m" + tloušťka.

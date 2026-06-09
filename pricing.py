@@ -128,6 +128,29 @@ def calculate(params: dict) -> dict:
     zast = params.get("zastavena_plocha_m2")
     uzit = params.get("uzitna_plocha_m2")
 
+    # === GEOMETRICKÝ STROP OBVODU (nezávislá kontrola z plochy, bez ďalšieho API volania) ===
+    # Fyzika: obvod budovy NEMÔŽE byť menší než obvod štvorca s rovnakou zastavanou plochou
+    # (= 4·√plocha). Keď AI prečíta obvod POD týmto minimom, časť obrysu prehliadla (časté:
+    # garáž, zalomenia L/U) → dorovnaj obvod na geometrické minimum. Footprint zo zastavanej,
+    # inak z úžitnej (interiér → footprint ≈ /0.82). Mieri presne na wall under-reading.
+    obvod_adjusted = False
+    obvod_floor_used = None
+    _fs = int(params.get("_floors_summed") or 1)
+    _ndiv = _fs if _fs > 1 else 1          # multi-fóto: obvod aj plocha sú SÚČET za n podlaží
+    if zast:
+        footprint_1np = float(zast)
+    elif uzit:
+        footprint_1np = (float(uzit) / _ndiv) / 0.82
+    else:
+        footprint_1np = None
+    if footprint_1np and footprint_1np > 25 and obvod_m > 0:
+        obvod_1np_read = obvod_m / _ndiv
+        obvod_floor_1np = 4.0 * math.sqrt(footprint_1np)
+        if obvod_1np_read < obvod_floor_1np * 0.97:    # výrazne pod fyzickým minimom = podčítanie
+            obvod_m = round(obvod_m * (obvod_floor_1np / obvod_1np_read), 1)
+            obvod_adjusted = True
+            obvod_floor_used = round(obvod_floor_1np, 1)
+
     items = []
 
     # hrúbky: použij NAMERANÚ len ak je z kóty (spoľahlivá); inak typická pre triedu + "(odhad)"
@@ -308,6 +331,11 @@ def calculate(params: dict) -> dict:
         warnings.append("Dům má garáž / vedlejší prostor. Ověřte, že její obvodové i vnitřní "
                         "stěny JSOU zahrnuté v délkách — bývají hlavním zdrojem podcenění zdiva. "
                         "V případě potřeby dorovnejte délky stěn níže.")
+    if obvod_adjusted:
+        warnings.append(f"Obvod přečtený z výkresu byl POD geometrickým minimem pro tuto zastavěnou "
+                        f"plochu (AI pravděpodobně přehlédla část obrysu — garáž, zalomení). "
+                        f"Dorovnali jsme obvod na ~{obvod_floor_used} m (fyzikální minimum 4·√plochy). "
+                        "Reálný obvod členitého domu bývá ještě vyšší — ověřte/dorovnejte délku obvodu níže.")
     # POZOR: úžitná aj zastavaná sú plochy JEDNÉHO podlažia (úžitná = súčet miestností 1.NP) →
     # pre CELÚ budovu (konzistentne so zdivom, ktoré je × podlazi) ich treba vynásobiť podlažiami.
     # Pri multi-fóto (každé podlažie samostatná fotka) je obvod aj plocha už SÚČET za n podlaží.
@@ -413,6 +441,8 @@ def calculate(params: dict) -> dict:
         "ma_zateplenie": zatepl,
         "assumed_skladba": assumed_skladba,
         "skladba_volba": skladba_volba if assumed_skladba else None,
+        "obvod_adjusted": obvod_adjusted,
+        "obvod_floor_m": obvod_floor_used,
         "stena_mm_raw": int(obvod_t_raw) if obvod_t_raw else None,
         "detected_thickness_mm": int(obvod_th) if obvod_th_read else None,
         "neobsahuje": _CFG["neobsahuje"],
