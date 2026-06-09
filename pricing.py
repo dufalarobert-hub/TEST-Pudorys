@@ -108,10 +108,6 @@ def calculate(params: dict) -> dict:
     user_tier = params.get("tier") or params.get("system")
     tier_key, tier_auto = _tier_key(user_tier or legend_tier, obvod_t if z_koty else None)
     tier_from_legend = bool(legend_tier and not user_tier)
-    # NEISTOTA TRIEDY: legenda nedala materiál → akú tehlu to je len HÁDAME (z hrúbky/default).
-    # Vtedy ukážeme prepínač s variantami (rovnaká filozofia ako skladba steny). Keď je materiál
-    # z legendy → istota → žiadny prepínač.
-    tier_uncertain = not bool(legend_tier)
     tier = _CFG["obvodove_tiery"][tier_key]
     pt = _CFG["priecky_tier"]
     po = _CFG["praca_obvod"]
@@ -443,7 +439,6 @@ def calculate(params: dict) -> dict:
         "tier_popis": tier["popis"],
         "tier_auto": tier_auto,
         "tier_from_legend": tier_from_legend,
-        "tier_uncertain": tier_uncertain,
         "obvod_material": params.get("obvod_material"),
         "zdivo_zdroj": params.get("zdivo_zdroj"),
         "ma_zateplenie": zatepl,
@@ -488,27 +483,16 @@ def calculate(params: dict) -> dict:
         },
     }
 
-    # VARIANTY pri NEISTOTE (rovnaká filozofia: nehádať jedno, ukázať možnosti). Obe sa rátajú
-    # TÝM ISTÝM kódom cez rekurziu, _no_variant blokuje zacyklenie.
-    if not params.get("_no_variant"):
-        # (a) skladba steny: zateplené ~300 vs plné 500 — keď je rozklad náš predpoklad
-        if assumed_skladba:
-            sv = {}
-            for v in ("zateplene", "plne"):
-                sub = dict(params); sub["skladba_volba"] = v; sub["_no_variant"] = True
-                rv = calculate(sub)
-                sv[v] = {"zdivo_total": rv["zdivo_total"], "range_lo": rv["range_lo"],
-                         "range_hi": rv["range_hi"], "obvod_th": rv["detected_thickness_mm"]}
-            result["skladba_variants"] = sv
-        # (b) trieda (materiál): lacné/stredné/dražší — keď materiál nie je z legendy (hádame)
-        if tier_uncertain:
-            tv = {}
-            for tk in ("lacne", "stredne", "drahe"):
-                sub = dict(params); sub["tier"] = tk; sub["_no_variant"] = True
-                rv = calculate(sub)
-                tv[tk] = {"zdivo_total": rv["zdivo_total"], "range_lo": rv["range_lo"],
-                          "range_hi": rv["range_hi"]}
-            result["tier_variants"] = tv
+    # VARIANTA SKLADBY STENY pri neistote (nehádať jedno, ukázať obe): zateplené ~300 vs plné 500.
+    # Obe sa rátajú TÝM ISTÝM kódom cez rekurziu, _no_variant blokuje zacyklenie.
+    if assumed_skladba and not params.get("_no_variant"):
+        sv = {}
+        for v in ("zateplene", "plne"):
+            sub = dict(params); sub["skladba_volba"] = v; sub["_no_variant"] = True
+            rv = calculate(sub)
+            sv[v] = {"zdivo_total": rv["zdivo_total"], "range_lo": rv["range_lo"],
+                     "range_hi": rv["range_hi"], "obvod_th": rv["detected_thickness_mm"]}
+        result["skladba_variants"] = sv
 
     return result
 

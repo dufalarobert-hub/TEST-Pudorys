@@ -125,11 +125,6 @@
 <script type="text/babel">
 const {useState,useRef} = React;
 const fmt = n => (n==null?'—':Math.round(n).toLocaleString('cs-CZ').replace(/ /g,' '));
-const TIERS=[
-  {k:'lacne',nm:'Levné',ds:'pórobeton / tenčí'},
-  {k:'stredne',nm:'Střední',ds:'silnější keramika'},
-  {k:'drahe',nm:'Dražší',ds:'tepelněizolační'},
-];
 
 function App(){
   const [files,setFiles]=useState([]);      // pole súborov: plan = 1 fotka/podlažie (viac možných), project = 1 PDF
@@ -306,26 +301,6 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
         </div>
         <p className="muted" style={{marginTop:10,marginBottom:0,fontSize:13}}>Rozdíl je <b>{fmt(Math.abs(r.skladba_variants.plne.zdivo_total-r.skladba_variants.zateplene.zdivo_total))} Kč</b> — proto se vyplatí ověřit typ zdiva. Většina novostaveb je „zdivo + zateplení".</p>
       </div>}
-
-    {/* TŘÍDA ZDIVA (Levné/Střední/Dražší) — SKRYTÉ z UI (user ho nechce zobrazovať). Kód aj
-        backend ponechané (default stredne), iba sa nevykresľuje. Návrat = false && -> true &&.
-        Jediný prepínač, ktorý chceme ukazovať, je SKLADBA STĚNY (300+200 vs 500) vyššie. */}
-    {false && (r.tier_uncertain && r.tier_variants
-      ? <div className="card">
-          <h3>Jaké zdivo? <span style={{fontWeight:400,color:'#b8860b',fontSize:14}}>· nejisté</span></h3>
-          <p className="muted" style={{marginTop:0}}>Druh zdiva (materiál) jsme z výkresu <b>nepoznali</b> — chybí legenda materiálů. Nevíme jistě, proto jsme spočítali <b>varianty</b>. Vyberte tu nejbližší vašemu zdivu:</p>
-          <div className="seg">
-            {TIERS.map(t=><button key={t.k} className={form.tier===t.k?'on':''} disabled={loading}
-              onClick={()=>recalc({tier:t.k})}>
-              <div className="nm">{t.nm}</div><div className="ds">{t.ds}</div>
-              {r.tier_variants[t.k] && <div style={{marginTop:6,fontWeight:700,fontSize:15}}>{fmt(r.tier_variants[t.k].zdivo_total)} Kč</div>}</button>)}
-          </div>
-          <p className="muted" style={{marginTop:10,marginBottom:0,fontSize:13}}>Rozdíl mezi třídami je malý (~10 %) — práce je u všech stejná, liší se jen materiál. {r.ma_zateplenie && 'Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
-        </div>
-      : (r.zdivo_zdroj==='legenda' && r.obvod_material &&
-          <div className="card">
-            <p className="muted" style={{margin:0}}>📋 Materiál zdiva jsme přečetli z dokumentu: <b>{r.obvod_material}</b> → třída <b>{r.tier_popis}</b>.{r.ma_zateplenie && ' Stěna má zateplení — počítáme jen zdivo, izolaci ne.'}</p>
-          </div>))}
 
     {/* CROSS-CHECK */}
     {cc && <div className="card cc">
