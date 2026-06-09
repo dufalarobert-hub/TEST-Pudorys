@@ -244,7 +244,8 @@ def _pick_plan_page(path: str):
     try:
         client = genai.Client(api_key=config.get_gemini_key())
         cfg = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_budget=256))
-        resp = client.models.generate_content(model=config.GEMINI_VISION_MODEL, contents=parts, config=cfg)
+        # výber strany = lacný flash (netreba drahý pro na jednoduché "ktorá strana je pôdorys")
+        resp = client.models.generate_content(model=config.GEMINI_PICK_MODEL, contents=parts, config=cfg)
         d = _parse_json(resp.text)
         pos = int(_num(d.get("plan_page"), 0) or 0)
         if not d.get("found") or pos < 0 or pos >= len(cand):

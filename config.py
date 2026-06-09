@@ -17,10 +17,13 @@ from pathlib import Path
 HOME = Path.home()
 BASE_DIR = Path(__file__).resolve().parent
 
-# Model pre víziu. 3.5-flash + thinking_budget 512 = ~13s a presné čítanie kót
-# (3.1-pro-preview bol presný ale ~90s = nepoužiteľné na web). Fallback 2.5-pro.
-GEMINI_VISION_MODEL = os.environ.get("GEMINI_VISION_MODEL", "models/gemini-3.5-flash")
-GEMINI_VISION_FALLBACK = "models/gemini-2.5-pro"
+# Model pre ČÍTANIE pôdorysu (vízia). 3.1-pro-preview: najmenšia variance (~7%), číta plnší obvod
+# než flash, a dnes je rýchly (~11-13s, starý ~90s problém je preč). Fallback flash (rýchly/lacný).
+GEMINI_VISION_MODEL = os.environ.get("GEMINI_VISION_MODEL", "models/gemini-3.1-pro-preview")
+GEMINI_VISION_FALLBACK = "models/gemini-3.5-flash"
+# Model pre VÝBER strany pôdorysu vo viacstránkovom PDF — jednoduchá úloha, stačí lacný flash
+# (drahý pro voláme len na samotnú extrakciu).
+GEMINI_PICK_MODEL = os.environ.get("GEMINI_PICK_MODEL", "models/gemini-3.5-flash")
 GEMINI_THINKING_BUDGET = int(os.environ.get("GEMINI_THINKING_BUDGET", "512"))
 
 # Zapisovateľný adresár pre dočasné uploady (Vercel: len /tmp; lokálne: temp).
