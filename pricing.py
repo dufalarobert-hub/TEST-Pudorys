@@ -243,11 +243,19 @@ def calculate(params: dict) -> dict:
                            1, "sada", malta_cost, malta_cost))
 
     # ===== 3. PREKLADY (paušál na otvor, bez značky) — otvory sa opakujú na každom podlaží =====
-    openings = (okna + dvere) * podlazi
-    preklad_cost = openings * _CFG["preklad_kc_otvor"]
+    # NOSNÝ preklad (okná + 1 vchod, v nosnej/obvodovej stene) = drahý KP7/U-profil;
+    # PRIEČKOVÝ (vnútorné dvere) = lacný plochý/NEP. Bez tohto rozlíšenia sa dverami bohaté
+    # / viacpodlažné domy predražovali (každý vnútorný otvor za 2200 namiesto ~700).
+    nosne_otvory = okna * podlazi + 1                     # okná na každom podlaží + 1 vchod (raz)
+    pricky_otvory = max(0, dvere - 1) * podlazi           # vnútorné dvere (bez vchodu) na podlaží
+    preklad_nosny = _CFG["preklad_kc_otvor"]
+    preklad_pricka = _CFG.get("preklad_pricka_kc_otvor", 700)
+    preklad_cost = nosne_otvory * preklad_nosny + pricky_otvory * preklad_pricka
+    openings = nosne_otvory + pricky_otvory
     if openings:
-        items.append(_item("Preklady nad otvormi", f"{openings}× otvor (okná + dvere)",
-                           openings, "otvor", _CFG["preklad_kc_otvor"], preklad_cost))
+        items.append(_item("Preklady nad otvormi",
+                           f"{nosne_otvory}× nosný (okná+vchod) + {pricky_otvory}× příčkový (dveře)",
+                           openings, "otvor", round(preklad_cost / openings), preklad_cost))
 
     # ===== 4. ŽB VĚNEC — nielen po obvode, ale aj nad vnútornými nosnými stenami (nesú strop) =====
     venec_m = (obvod_m + nosne_m) * podlazi

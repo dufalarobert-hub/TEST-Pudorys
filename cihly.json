@@ -22,7 +22,9 @@
   "praca_priecky": {"base_kc_m2": 280, "per_mm": 1.20, "rozsah_mult": [0.85, 1.20]},
 
   "preklad_kc_otvor": 2200,
-  "_pozn_preklad": "Najhrubší odhad — silno závisí od šírky otvoru. Ytong U-profil ~1400-1800/otvor, Porotherm KP7 pri širokých oknách 4000-9000. 2200 = vážený stred (dom má viac úzkych dverí než širokých okien).",
+  "_pozn_preklad": "NOSNÝ preklad (okná + vchod, v nosnej/obvodovej stene): KP7/U-profil. Ytong U-profil ~1400-1800, Porotherm KP7 pri širokých oknách 4000-9000. 2200 = vážený stred.",
+  "preklad_pricka_kc_otvor": 700,
+  "_pozn_preklad_pricka": "PRIEČKOVÝ preklad (vnútorné dvere v priečkach): lacný plochý / Ytong NEP. Overené na reálnej Ytong ponuke RD Jiráský: NEP 100-1250 ~500-725 Kč/otvor. Bez tohto rozlíšenia (paušál 2200 na všetko) sa preklady na dverami bohatých/viacpodlažných domoch predražovali o desiatky tisíc.",
   "preklad_rozsah": [1200, 4500],
   "venec_kc_m": 1200,
   "_pozn_venec": "KOMPONENTOVO (konzistentné so zvyškom): práca 325 Kč/bm (cenikyremesel 2025: šalování 120 + armování 25 + betonování 180) + materiál ~760 (věncovka+izolace ~380, beton C16/20 ~0,05 m³ ~170, výztuž ~6 kg ~210). = ~1085, zaokr. 1200. Turnkey dodávateľské cenníky uvádzajú ~2000-2300 (s maržou) → horný okraj rozsahu. POZN: pôvodných 2200 bolo turnkey a tajne kompenzovalo podčítanie dĺžky stien Geminim — odstránené, nech je odhad čestný (radšej širší band + varovania).",
