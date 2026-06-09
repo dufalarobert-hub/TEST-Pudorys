@@ -61,8 +61,14 @@ POSTUP:
       tlustě jako obvod. Součet jejich délek do "vnitrni_nosne_m" + tloušťka.
    b) PŘÍČKY — tenké dělící stěny (~75-150 mm). Součet délek do "pricky_m" + tloušťka.
    Když to nerozlišíš spolehlivě, dej vše do pricky_m a vnitrni_nosne_m = 0.
-   Stěny GARÁŽE započítej podle funkce (obvodová garáže do obvod_m, vnitřní nosná
-   garáže do vnitrni_nosne_m). Buď upřímný že délky jsou odhad.
+3c. GARÁŽ / VEDLEJŠÍ NEVYTÁPĚNÉ PROSTORY — VÝSLOVNĚ ZKONTROLUJ (častá chyba = vynechání!):
+   Projdi celý výkres a zjisti, jestli je SOUČÁSTÍ domu garáž, technická místnost, dílna,
+   přístřešek nebo jiná vedlejší/nevytápěná část (poznáš podle popisku „garáž/garage/stání/
+   technická/dílna", podle vjezdu/garážových vrat, nebo podle velké místnosti bez oken s autem).
+   Tyto stěny se SNADNO PŘEHLÉDNOU a tím se podcení množství zdiva. Pokud existují, jejich
+   OBVODOVÉ stěny započítej do obvod_m a vnitřní/dělící do vnitrni_nosne_m / pricky_m
+   (podle tloušťky). Nastav ma_garaz=true a v note/co_potvrdit to zmiň. Když garáž ani vedlejší
+   prostor není, ma_garaz=false. Buď upřímný, že délky jsou odhad.
 4. TLOUŠŤKA ZDIVA — POZOR, klíčové: urči tloušťku samotné NOSNÉ TVÁRNICE / CIHLY
    (zdiva), NE celé skladby stěny vč. zateplení. Pokud je obvodová stěna SLOŽENÁ
    (např. "OBVODOVÁ STĚNA tl. 500 mm = YTONG Standard 300 + tepelná izolace 200 mm"),
@@ -128,6 +134,7 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "zastavena_plocha_m2": <číslo nebo null>,
   "pocet_podlazi": <číslo nebo null>,
   "ma_schodiste": <true/false — je na půdorysu schodiště (= dům má pravděpodobně víc podlaží)?>,
+  "ma_garaz": <true/false — je součástí domu garáž / technická místnost / dílna / vedlejší nevytápěná část? (jsou-li, jejich stěny MUSÍ být v délkách zahrnuty)>,
   "vyska_podlazi_m": <číslo nebo null>,
   "pocet_oken": <číslo nebo null>,
   "pocet_dveri": <číslo nebo null>,
@@ -328,6 +335,7 @@ def _normalize(d: dict) -> dict:
         "plochy_mistnosti_m2": rooms,
         "pocet_podlazi": int(_num(d.get("pocet_podlazi"), 1) or 1),
         "ma_schodiste": bool(d.get("ma_schodiste")),
+        "ma_garaz": bool(d.get("ma_garaz")),
         "vyska_podlazi_m": _num(d.get("vyska_podlazi_m"), 2.8) or 2.8,
         "pocet_oken": int(_num(d.get("pocet_oken"), 0) or 0),
         "pocet_dveri": int(_num(d.get("pocet_dveri"), 0) or 0),

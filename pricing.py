@@ -302,6 +302,12 @@ def calculate(params: dict) -> dict:
                 "AI je z půdorysu často podcení — hlavně velká prosklení a GARÁŽOVÁ VRATA "
                 "(~10–12 m²!), která se do otvorů nemusela započítat. Zkontrolujte počet "
                 "oken/dveří níže (víc otvorů = míň zdiva = nižší cena).")
+    # GARÁŽ: keď ju AI rozpoznala, pripomeň overiť že jej steny SÚ v dĺžkach (na reálnom Ytong
+    # projekte garáž tvorila ~62 m² nezachytených stien = ~33 % podcenenie objemu).
+    if params.get("ma_garaz"):
+        warnings.append("Dům má garáž / vedlejší prostor. Ověřte, že její obvodové i vnitřní "
+                        "stěny JSOU zahrnuté v délkách — bývají hlavním zdrojem podcenění zdiva. "
+                        "V případě potřeby dorovnejte délky stěn níže.")
     # POZOR: úžitná aj zastavaná sú plochy JEDNÉHO podlažia (úžitná = súčet miestností 1.NP) →
     # pre CELÚ budovu (konzistentne so zdivom, ktoré je × podlazi) ich treba vynásobiť podlažiami.
     # Pri multi-fóto (každé podlažie samostatná fotka) je obvod aj plocha už SÚČET za n podlaží.

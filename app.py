@@ -75,6 +75,7 @@ def _aggregate_floors(floors):
         "_floors_summed": n,
         "confidence_0_100": min(int(fl.get("confidence_0_100") or 0) for fl in floors),  # najslabší článok
         "ma_zateplenie": any(fl.get("ma_zateplenie") for fl in floors),
+        "ma_garaz": any(fl.get("ma_garaz") for fl in floors),
         "ma_schodiste": False,
     })
     return agg
