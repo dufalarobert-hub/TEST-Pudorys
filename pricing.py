@@ -84,17 +84,18 @@ def calculate(params: dict) -> dict:
     # Voľba skladby pri NEISTOTE: 'zateplene' = murivo ~300 + izolácia (default),
     # 'plne' = celá hrúbka je murivo (napr. Porotherm 50T / Ytong 500). None → default zateplené.
     skladba_volba = params.get("skladba_volba") or "zateplene"
-    # SKLADBA STENY je NEISTÁ vždy, keď má stena zateplenie a NEČÍTALI sme skladbu z legendy
-    # → nevieme, či X mm je plné murivo, alebo nosné murivo + izolácia. Ponúkni OBE varianty.
-    # (Trigger na ma_zateplenie, NIE len na hrúbku >375 — Gemini ten istý výkres číta raz 500,
-    #  raz 300, ale ma_zateplenie nastaví v oboch prípadoch; takto je prepínač spoľahlivý.)
+    # SKLADBA STENY je NEISTÁ keď NEčítame z legendy a stena je BUĎ označená ako zateplená,
+    # ALEBO je HRUBÁ (>375 mm) — hrubá stena je sama o sebe nejednoznačná: plné murivo vs
+    # nosné murivo + izolácia. Gemini ten istý výkres číta raz „300+zateplenie", raz „500 bez
+    # zateplenia" → trigger MUSÍ pokryť oba prípady (zatepl OR hrubá), inak prepínač raz je, raz nie.
     _from_legend = (params.get("zdivo_zdroj") == "legenda")
-    if zatepl and not _from_legend:
+    _thick = bool(obvod_t) and float(obvod_t) > 375
+    if (zatepl or _thick) and not _from_legend:
         assumed_skladba = True
-        if float(obvod_t or 0) > 375:
-            blok_mm, plna_mm = 300.0, float(obvod_t)       # Gemini dal celú stenu (napr. 500)
+        if _thick:
+            blok_mm, plna_mm = 300.0, float(obvod_t)       # Gemini dal celú (hrubú) stenu, napr. 500
         else:
-            blok_mm = float(obvod_t or 300)                # Gemini dal už nosný blok (~300)
+            blok_mm = float(obvod_t or 300)                # Gemini dal nosný blok (~300) + flag zateplenia
             plna_mm = blok_mm + 200                         # + typická izolácia ~200 → plná stena ~500
         obvod_t_raw = plna_mm                               # "stěna ~X mm" = plná hrúbka vč. izolácie
         if skladba_volba == "plne":
