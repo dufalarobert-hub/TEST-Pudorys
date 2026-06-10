@@ -25,8 +25,11 @@ PRICKY_INHERENT_UNC = 0.18
 # inherentná neistota AI ČÍTANIA pôdorysu — aj pri vysokej confidence model varíruje
 # a môže nezachytiť časť stien. Bez tohto by ±band falošne predstieral presnosť (~±9 %).
 READING_BASE_UNC = 0.10
-# keď zdivo vyjde NÍZKY podiel hrubej stavby → pravdepodobne nezachytené steny (garáž, nosné)
-LOW_SHARE_PCT = 25
+# keď zdivo vyjde VÝRAZNE NÍZKY podiel hrubej stavby → možné nezachytené steny (garáž, nosné).
+# Reálne zdivo (po čestnej kalibrácii věnca/prekladov) tvorí ~22-28 % hrubej stavby (steny sú
+# ~¼-⅓, zvyšok základy/stropy/strecha). Preto prah 18 % (predtým 25 = falošný poplach skoro vždy).
+# Skutočné podčítanie aj tak chytá garáž-varovanie + geometrický strop obvodu, nezávisle od %.
+LOW_SHARE_PCT = 18
 UNDERCOUNT_UP = 0.15   # asymetrické rozšírenie HORE (reálne môže byť vyššie)
 
 # keď poznáme PRESNÝ produkt z legendy, nehádame v celom rozsahu triedy (lacný↔drahý variant),
@@ -413,8 +416,8 @@ def calculate(params: dict) -> dict:
                      "(trhový benchmark zděného RD: základy, zdivo, stropy, krov+strecha). "
                      f"Vyššie spočítané zdivo je z toho ~{podiel} % — zvyšok sú základy, stropy a strecha."),
         }
-        if podiel and podiel > 55:
-            warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne 30–45 %). Over hrúbku a triedu "
+        if podiel and podiel > 50:
+            warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne ~22–32 %). Over hrúbku a triedu "
                             "— nie je v hrúbke započítané zateplenie? Nie je zvolená drahšia trieda než treba?")
         elif podiel and podiel < LOW_SHARE_PCT:
             # Nízky podiel sám osebe ešte neznamená chybu — lacná TENKÁ stavba ho má prirodzene.
@@ -424,11 +427,11 @@ def calculate(params: dict) -> dict:
                           or (geom_ratio is not None and geom_ratio < 0.85)
             if chyba_stien:
                 up_extra = UNDERCOUNT_UP
-                warnings.append(f"⚠ Zdivo je len ~{podiel} % hrubej stavby (bežne 30–45 %) a geometria "
+                warnings.append(f"⚠ Zdivo je len ~{podiel} % hrubej stavby (bežne ~22–32 %) a geometria "
                                 "napovedá, že sa z výkresu nepodarilo prečítať všetky steny (napr. garáž "
                                 "alebo vnútorné nosné). Reálna cena môže byť VYŠŠIA — dorovnaj dĺžky nižšie.")
             else:
-                warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne 30–45 %). Ak je to lacná/tenká "
+                warnings.append(f"Zdivo tvorí ~{podiel} % hrubej stavby (bežne ~22–32 %). Ak je to lacná/tenká "
                                 "stavba (tenké zdivo), môže to sedieť; ak má dom navyše garáž či vnútorné "
                                 "nosné steny, over/dorovnaj dĺžky stien nižšie.")
 
