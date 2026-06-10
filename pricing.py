@@ -149,10 +149,12 @@ def calculate(params: dict) -> dict:
 
     items = []
 
-    # hrúbky: použij NAMERANÚ len ak je z kóty (spoľahlivá); inak typická pre triedu + "(odhad)"
+    # hrúbky: použij NAMERANÚ len ak je z kóty (spoľahlivá); inak typická pre triedu + "(odhad)".
+    # Pri VARIANTE SKLADBY (assumed_skladba) sme obvod_t nastavili zámerne (300 blok vs 500 plné) →
+    # MUSÍME ju použiť, inak by obe varianty spadli na typickú hrúbku triedy = rovnaká cena (bug).
     pricky_t = params.get("pricky_tloustka_mm")
     nosne_t = params.get("vnitrni_nosne_tloustka_mm")
-    obvod_th_read = z_koty and bool(obvod_t)
+    obvod_th_read = (z_koty or assumed_skladba) and bool(obvod_t)
     pricky_th_read = z_koty and bool(pricky_t)
     nosne_th_read = z_koty and bool(nosne_t)
     obvod_th = float(obvod_t) if obvod_th_read else tier["typ_hrubka_mm"]
