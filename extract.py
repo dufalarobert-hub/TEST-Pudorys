@@ -53,25 +53,31 @@ POSTUP:
    nebo formát 34'-6"), přepočítej na metry (1' = 0,3048 m, 1" = 0,0254 m) a v note to uveď.
    Pokud je výkres focený POD ÚHLEM / pootočený / rozmazaný / ručně kreslený (ne čistý CAD),
    výrazně SNIŽ confidence a uveď to v note — kóty pak nejsou spolehlivé.
-2. Obvodové zdivo: spočítej délku CELÉHO vnějšího obrysu domu z kót. POZORNĚ OBKROUŽI celý
-   vnější obvod a sečti VŠECHNY vnější strany — včetně garáže, přístavků, výstupků, zalomení
-   (L/U/T tvary, arkýře, ustoupení). Časté podcenění: vynechání garáže a krátkých úseků u
-   zalomení. (Příklad: obdélník 11000 x 13500 mm => 2*(11+13.5) = 49 m; L-tvar = součet všech
-   stran po obvodu.) KONTROLA SAMA SEBE: obvod nemůže být menší než obvod čtverce stejné
-   zastavěné plochy = 4*odmocnina(zastavěná plocha). Když ti vyjde méně, přehlédl jsi část
-   obvodu — projdi obrys znovu. Reálné domy mají obvod typicky 4,2-5,5 * odmocnina(plocha).
+2. Obvodové zdivo: spočítej délku obrysu jen ZDĚNÉ / VYTÁPĚNÉ budovy (po STĚNÁCH). POZORNĚ
+   obkruž obvod a sečti všechny strany budovy — včetně garáže, přístavků, výstupků, zalomení
+   (L/U/T tvary, arkýře, ustoupení).
+   !!! NEzahrnuj do obvodu TERASU, balkon, dřevěnou palubu/dlubu, dlažbu, chodník, pergolu ani
+   kryté stání / přístřešek (carport) — to jsou plochy BEZ obvodových stěn, často kreslené
+   ČÁRKOVANĚ nebo jako dlažba MIMO obrys domu. Obvod veď JEN tam, kde je nakreslená stěna
+   (plný šrafovaný/tlustý pás), NE po hraně terasy/zpevněné plochy. (Toto je častá chyba —
+   terasa nafoukne obvod a zdvojnásobí cenu.)
+   (Příklad: obdélník 11000 x 13500 mm => 2*(11+13.5) = 49 m; L-tvar = součet stran po obvodu.)
+   KONTROLA SAMA SEBE: reálné domy mají obvod typicky 4,2-5,5 * odmocnina(zastavěná plocha).
+   Když ti vyjde MÉNĚ než 4*√plocha → přehlédl jsi část obvodu. Když VÍCE než ~6*√plocha →
+   nejspíš jsi do obvodu zahrnul terasu/zpevněnou plochu — veď obrys jen po stěnách domu.
 3. VNITŘNÍ STĚNY — rozliš DVA druhy podle TLOUŠŤKY (důležité, mají různou cenu):
    a) VNITŘNÍ NOSNÉ stěny — silnější (~175-300 mm), často značené "nosná" / kreslené
       tlustě jako obvod. Součet jejich délek do "vnitrni_nosne_m" + tloušťka.
    b) PŘÍČKY — tenké dělící stěny (~75-150 mm). Součet délek do "pricky_m" + tloušťka.
    Když to nerozlišíš spolehlivě, dej vše do pricky_m a vnitrni_nosne_m = 0.
 3c. GARÁŽ / VEDLEJŠÍ NEVYTÁPĚNÉ PROSTORY — VÝSLOVNĚ ZKONTROLUJ (častá chyba = vynechání!):
-   Projdi celý výkres a zjisti, jestli je SOUČÁSTÍ domu garáž, technická místnost, dílna,
-   přístřešek nebo jiná vedlejší/nevytápěná část (poznáš podle popisku „garáž/garage/stání/
-   technická/dílna", podle vjezdu/garážových vrat, nebo podle velké místnosti bez oken s autem).
-   Tyto stěny se SNADNO PŘEHLÉDNOU a tím se podcení množství zdiva. Pokud existují, jejich
-   OBVODOVÉ stěny započítej do obvod_m a vnitřní/dělící do vnitrni_nosne_m / pricky_m
-   (podle tloušťky). Nastav ma_garaz=true a v note/co_potvrdit to zmiň. Když garáž ani vedlejší
+   Projdi celý výkres a zjisti, jestli je SOUČÁSTÍ domu UZAVŘENÁ garáž, technická místnost nebo
+   dílna OHRANIČENÁ STĚNAMI (poznáš podle popisku „garáž/technická/dílna", garážových vrat,
+   nebo místnosti bez oken s autem OBKLOPENÉ stěnami). Takové stěny započítej do obvod_m /
+   vnitrni_nosne_m / pricky_m podle tloušťky a nastav ma_garaz=true.
+   POZOR — OTEVŘENÉ kryté stání / carport / přístřešek (jen střecha na sloupcích, BEZ stěn) a
+   terasa NEMAJÍ obvodové zdivo → NEzapočítávej je do žádné délky stěn. Garáž = stěny ANO;
+   carport/terasa = stěny NE. Když garáž ani vedlejší
    prostor není, ma_garaz=false. Buď upřímný, že délky jsou odhad.
 4. TLOUŠŤKA ZDIVA — POZOR, klíčové: urči tloušťku samotné NOSNÉ TVÁRNICE / CIHLY
    (zdiva), NE celé skladby stěny vč. zateplení. Pokud je obvodová stěna SLOŽENÁ
