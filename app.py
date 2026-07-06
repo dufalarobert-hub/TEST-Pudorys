@@ -23,6 +23,7 @@ import claude_vision
 import reconcile
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024   # 20 MB strop uploadu (Vercel má aj tak ~4.5)
 ALLOWED = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
 
 

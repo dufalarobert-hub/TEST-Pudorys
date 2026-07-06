@@ -60,7 +60,8 @@ class AnthropicVision:
         key = os.environ.get("ANTHROPIC_API_KEY")
         if not key:
             raise RuntimeError("EXTRACTOR_PROVIDER=anthropic vyžaduje ANTHROPIC_API_KEY.")
-        self._client = anthropic.Anthropic(api_key=key)
+        # timeout < Vercel maxDuration 60 s → pri probléme graceful chyba, nie zabitá funkcia
+        self._client = anthropic.Anthropic(api_key=key, timeout=55.0, max_retries=1)
 
     def generate(self, images, prompt, cheap=False):
         model = (config.ANTHROPIC_PICK_MODEL if cheap else config.ANTHROPIC_VISION_MODEL)

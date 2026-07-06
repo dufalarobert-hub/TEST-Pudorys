@@ -11,7 +11,9 @@ React SPA (templates/app.html, CDN bez buildu)
    │  POST /api/analyze (upload)        POST /api/calculate (úpravy)
    ▼
 Flask app.py
-   ├─ extract.py        Gemini 3.5-flash vízia → JSON (obvod, nosné, příčky, tloušťky, otvory)
+   ├─ extract.py        AI vízia → JSON (obvod, nosné, příčky, tloušťky, otvory)
+   │    └ providers.py  model-agnostické: Gemini 3.1-pro (default) ↔ Claude Fable
+   │                    přepnutí = env EXTRACTOR_PROVIDER, žádná změna kódu
    ├─ reconcile.py      quality_gate (přijmout/odmítnout) · needs_escalation · merge
    ├─ claude_review.py  Claude text kontrola (jen když Gemini nejistý) — graceful
    ├─ claude_vision.py  Opus 4.8 vízia — JEN při eskalaci (nízká jistota)
@@ -48,11 +50,11 @@ python3 app.py                       # → http://localhost:5005
 
 | Runtime | Dev/test (mimo deploy) |
 |---------|------------------------|
-| app.py, config.py, extract.py | batch_test.py, batch_ensemble.py |
-| pricing.py, reconcile.py | gate_test.py, threeway.py |
-| claude_review.py, claude_vision.py | cv_walls.py (CV prototyp, opencv) |
+| app.py, config.py, extract.py, providers.py | batch_test.py, batch_ensemble.py |
+| pricing.py, reconcile.py | eval.py + ground_truth/ (merací etalón) |
+| claude_review.py, claude_vision.py | gate_test.py, threeway.py, cv_walls.py |
 | cihly.json, templates/app.html | shot.js (puppeteer screenshoty) |
-| api/index.py, requirements.txt | scrapers/, test_podorysy/ |
+| api/index.py, requirements.txt | scrapers/, test_podorysy/, PLAN_PRESNOST.md, ZNALOSTI_ROZPOCTAR.md |
 
 > ⚠️ Orientační odhad, ceny bez DPH. „Hrubé zdivo" = obvod + nosné + příčky + překlady +
 > věnec + práce — **ne** celá hrubá stavba (viz cross-check). Před objednávkou ověř s rozpočtářem.

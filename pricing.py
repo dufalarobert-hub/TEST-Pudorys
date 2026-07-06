@@ -18,6 +18,7 @@ _CFG = json.load(open(os.path.join(os.path.dirname(__file__), "cihly.json"), enc
 WINDOW_M2 = 1.5
 ENTRANCE_DOOR_M2 = 2.0
 INTERIOR_DOOR_M2 = 1.6
+GARAGE_DOOR_M2 = 10.5   # garážové vráta ~2.4×4.4 m — bez odpočtu by sme "murovali dieru"
 
 # priečky sa nedajú spoľahlivo zmerať ani najlepším modelom (kóty na ne chýbajú)
 PRICKY_INHERENT_UNC = 0.18
@@ -174,6 +175,8 @@ def calculate(params: dict) -> dict:
     obvod_gross = obvod_m * mur_vyska * podlazi
     # okná sa opakujú na KAŽDOM podlaží (čítame ich z 1.NP), vchodové dvere len raz (prízemie)
     obvod_openings = okna * WINDOW_M2 * podlazi + ENTRANCE_DOOR_M2
+    if params.get("ma_garaz"):
+        obvod_openings += GARAGE_DOOR_M2   # vráta len raz (prízemie); preklad rieši položka nižšie
     obvod_net = max(obvod_gross - obvod_openings, 0)
     obvod_price = round(tier["kc_m3"] * obvod_th / 1000)        # Kč/m² steny pri tejto hrúbke
     obvod_mat = round(obvod_net * obvod_price)

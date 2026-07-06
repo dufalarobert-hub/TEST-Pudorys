@@ -46,8 +46,9 @@ Soustřeď se hlavně na dvě čísla, která se těžko odhadují:
 2. VNITŘNÍ PŘÍČKY (pricky_m): součet délek vnitřních dělících stěn v metrech.
    Toto je nejtěžší – odhadni co nejpoctivěji v poměru ke kótám, ne od oka.
 
-Dál ověř: tloušťky stěn (mm), počet oken, počet dveří, a jestli na výkrese
-vidíš kóty (pokud ne, sniž confidence – čteš jen vizuálně).
+Dál ověř: tloušťky stěn (mm), počet oken, počet dveří (VČETNĚ vchodových;
+garážová vrata NEpočítej), a jestli na výkrese vidíš kóty (pokud ne, sniž
+confidence – čteš jen vizuálně).
 
 Vrať POUZE validní JSON, žádný text okolo:
 {
@@ -128,7 +129,9 @@ def read_independently(images, gemini=None, model=None):
     mdl = model or VISION_MODEL
     try:
         import anthropic
-        client = anthropic.Anthropic(api_key=key, max_retries=0, timeout=90.0)
+        # timeout MUSÍ byť pod Vercel maxDuration 60 s (pick+extract už zjedli ~15-20 s);
+        # 90 s znamenalo, že hang zabil celú funkciu namiesto graceful "vízia zlyhala".
+        client = anthropic.Anthropic(api_key=key, max_retries=0, timeout=45.0)
         resp = client.messages.create(
             model=mdl, max_tokens=1024,
             tools=[READING_TOOL],

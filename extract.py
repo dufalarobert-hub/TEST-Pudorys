@@ -80,6 +80,8 @@ POSTUP:
    terasa NEMAJÍ obvodové zdivo → NEzapočítávej je do žádné délky stěn. Garáž = stěny ANO;
    carport/terasa = stěny NE. Když garáž ani vedlejší
    prostor není, ma_garaz=false. Buď upřímný, že délky jsou odhad.
+   GARÁŽOVÁ VRATA NEpočítej mezi okna ani dveře — kalkulace je řeší zvlášť přes ma_garaz
+   (překlad velkého rozponu i odpočet plochy vrat).
 4. TLOUŠŤKA ZDIVA — POZOR, klíčové: urči tloušťku samotné NOSNÉ TVÁRNICE / CIHLY
    (zdiva), NE celé skladby stěny vč. zateplení. Pokud je obvodová stěna SLOŽENÁ
    (např. "OBVODOVÁ STĚNA tl. 500 mm = YTONG Standard 300 + tepelná izolace 200 mm"),
@@ -115,15 +117,18 @@ POSTUP:
    Když je oficiální užitná/zastavěná uvedena v popisu, použij ji.
 6. Spočítej okna a dveře (i odhadem). Okna/dveře poznáš podle přerušení ve stěně
    se symbolem otevírání (oblouk) nebo podle šířkové kóty otvoru (800, 900, 2150…).
+   Do pocet_dveri počítej VŠECHNY dveře VČETNĚ vchodových (vchod se v kalkulaci
+   rozlišuje automaticky). Garážová vrata do počtů NEpatří (viz 3c).
    SPOLEHLIVĚJŠÍ: pokud je v dokumentu TABULKA / VÝPIS OKEN A DVEŘÍ (značky O1, O2, D1…
    s rozměry a počty kusů), použij počty a šířky ODTUD — je to tvrdší údaj než počítání
    symbolů na půdorysu. (Čti významově — výpis může být jakkoliv nadepsaný.)
 7. SCHODIŠTĚ: je na půdorysu schodiště (stupně, šipka nahoru/dolů, "S" značka)? Pokud ano,
    dům má skoro jistě víc podlaží (nebo podkroví/sklep) → ma_schodiste=true. To je signál,
    že počítat jen 1 podlaží by bylo podcenění.
-8. VÝŠKA PODLAŽÍ: pokud je k dispozici ŘEZ domu nebo výšková kóta (konstrukční/světlá výška,
-   např. 2,75 / 3,0 m), použij ji do vyska_podlazi_m. Když ji nevidíš, nech null
-   (dosadí se typická 2,8 m) a NEZVYŠUJ kvůli tomu confidence.
+8. VÝŠKA PODLAŽÍ: pokud je k dispozici ŘEZ domu nebo výšková kóta, dej do vyska_podlazi_m
+   KONSTRUKČNÍ výšku podlaží (podlaha–podlaha, např. 3,0 m). Máš-li jen SVĚTLOU výšku
+   místnosti (např. 2,6 m), přičti ~0,4 m na strop+podlahu a uveď to v note.
+   Když výšku nevidíš, nech null (dosadí se typická) a NEZVYŠUJ kvůli tomu confidence.
 
 Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
 {
@@ -147,10 +152,10 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "ma_schodiste": <true/false — je na půdorysu schodiště (= dům má pravděpodobně víc podlaží)?>,
   "ma_garaz": <true/false — je součástí domu garáž / technická místnost / dílna / vedlejší nevytápěná část? (jsou-li, jejich stěny MUSÍ být v délkách zahrnuty)>,
   "vyska_podlazi_m": <číslo nebo null>,
-  "pocet_oken": <číslo nebo null>,
-  "pocet_dveri": <číslo nebo null>,
+  "pocet_oken": <číslo nebo null — BEZ garážových vrat>,
+  "pocet_dveri": <číslo nebo null — všechny dveře VČETNĚ vchodových, BEZ garážových vrat>,
   "pocet_mistnosti": <číslo nebo null>,
-  "koty_mm": [<přečtené kóty>],
+  "koty_mm": [<max ~30 NEJDŮLEŽITĚJŠÍCH přečtených kót (celkové rozměry, tloušťky stěn)>],
   "meritko_source": "z kót" | "měřítko/scale bar" | "plochy m²" | "žádné",
   "confidence_0_100": <číslo>,
   "co_potvrdit": ["max 4 věci které má uživatel potvrdit/doplnit"],
