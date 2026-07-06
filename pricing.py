@@ -20,6 +20,24 @@ ENTRANCE_DOOR_M2 = 2.0
 INTERIOR_DOOR_M2 = 1.6
 GARAGE_DOOR_M2 = 10.5   # garážové vráta ~2.4×4.4 m — bez odpočtu by sme "murovali dieru"
 
+# typické VÝŠKY otvorov (m) — plocha = vyčítaná šírka × typická výška daného typu
+OPENING_H = {"okno": 1.5, "francouzske_okno": 2.3, "hs_portal": 2.3,
+             "dvere_vchod": 2.02, "dvere_vnitrni": 1.97}
+
+
+def _preklad_kc_sirka(sirka_m):
+    """Cena nosného prekladu podľa svetlosti otvoru — lineárna interpolácia tabuľky
+    z cihly.json (KP7 krivka → KP XL/ŽB). Fallback: paušál."""
+    tab = sorted((float(k), float(v)) for k, v in
+                 (_CFG.get("preklad_nosny_kc_sirka") or {}).items())
+    if not tab:
+        return _CFG["preklad_kc_otvor"]
+    s = max(tab[0][0], min(float(sirka_m), tab[-1][0]))   # clamp na okraje tabuľky
+    for (x0, y0), (x1, y1) in zip(tab, tab[1:]):
+        if x0 <= s <= x1:
+            return y0 + (y1 - y0) * (s - x0) / (x1 - x0) if x1 > x0 else y0
+    return tab[-1][1]
+
 # priečky sa nedajú spoľahlivo zmerať ani najlepším modelom (kóty na ne chýbajú)
 PRICKY_INHERENT_UNC = 0.18
 
@@ -173,8 +191,22 @@ def calculate(params: dict) -> dict:
 
     # ===== 1. OBVODOVÉ ZDIVO (materiál = Kč/m³ × hrúbka) =====
     obvod_gross = obvod_m * mur_vyska * podlazi
+    # ITEMIZOVANÉ OTVORY (keď AI vyčítala šírky z kót/výpisu): reálne plochy namiesto
+    # paušálov — francúzske okno 2,4 m má 5,5 m², nie 1,5 m². Fallback = staré paušály.
+    otvory = [o for o in (params.get("otvory") or [])
+              if isinstance(o, dict) and o.get("typ") in OPENING_H and o.get("sirka_m")]
+    okno_it = [o for o in otvory if o["typ"] in ("okno", "francouzske_okno", "hs_portal")]
+    vchod_it = [o for o in otvory if o["typ"] == "dvere_vchod"]
+    vnut_it = [o for o in otvory if o["typ"] == "dvere_vnitrni"]
+
+    def _plocha_otvorov(items):
+        return sum(float(o["sirka_m"]) * OPENING_H[o["typ"]] * int(o.get("pocet") or 1)
+                   for o in items)
+
     # okná sa opakujú na KAŽDOM podlaží (čítame ich z 1.NP), vchodové dvere len raz (prízemie)
-    obvod_openings = okna * WINDOW_M2 * podlazi + ENTRANCE_DOOR_M2
+    okna_ded = _plocha_otvorov(okno_it) if okno_it else okna * WINDOW_M2
+    vchod_ded = _plocha_otvorov(vchod_it) if vchod_it else ENTRANCE_DOOR_M2
+    obvod_openings = okna_ded * podlazi + vchod_ded
     if params.get("ma_garaz"):
         obvod_openings += GARAGE_DOOR_M2   # vráta len raz (prízemie); preklad rieši položka nižšie
     obvod_net = max(obvod_gross - obvod_openings, 0)
@@ -234,7 +266,8 @@ def calculate(params: dict) -> dict:
     # ===== 3. VNÚTORNÉ PRIEČKY (materiál = Kč/m³ × hrúbka) =====
     pricky_gross = pricky_m * mur_vyska * podlazi
     # vnútorné dvere (dvere − 1 vchod) sa tiež opakujú na každom podlaží
-    pricky_openings = max(0, dvere - 1) * INTERIOR_DOOR_M2 * podlazi
+    vnut_ded = _plocha_otvorov(vnut_it) if vnut_it else max(0, dvere - 1) * INTERIOR_DOOR_M2
+    pricky_openings = vnut_ded * podlazi
     pricky_net = max(pricky_gross - pricky_openings, 0)
     pricky_price = round(pt["kc_m3"] * pricky_th / 1000)
     pricky_mat = round(pricky_net * pricky_price)
@@ -260,7 +293,15 @@ def calculate(params: dict) -> dict:
     pricky_otvory = max(0, dvere - 1) * podlazi           # vnútorné dvere (bez vchodu) na podlaží
     preklad_nosny = _CFG["preklad_kc_otvor"]
     preklad_pricka = _CFG.get("preklad_pricka_kc_otvor", 700)
-    preklad_cost = nosne_otvory * preklad_nosny + pricky_otvory * preklad_pricka
+    if okno_it:
+        # šírky známe → preklad podľa SVETLOSTI (KP7 krivka; HS portál 4 m ≠ okno 1 m!)
+        nosny_cost = sum(_preklad_kc_sirka(o["sirka_m"]) * int(o.get("pocet") or 1)
+                         for o in okno_it) * podlazi
+        nosny_cost += (_preklad_kc_sirka(vchod_it[0]["sirka_m"]) if vchod_it
+                       else preklad_nosny)                 # vchod raz
+        preklad_cost = nosny_cost + pricky_otvory * preklad_pricka
+    else:
+        preklad_cost = nosne_otvory * preklad_nosny + pricky_otvory * preklad_pricka
     openings = nosne_otvory + pricky_otvory
     if openings:
         items.append(_item("Preklady nad otvormi",
@@ -303,6 +344,10 @@ def calculate(params: dict) -> dict:
     # a) čítanie výkresu: inherentná neistota AI + (chýbajúca) confidence + Opus rozpor
     model_unc = float(params.get("model_uncertainty") or 0)
     u_read = READING_BASE_UNC + (100 - conf) / 250.0 + model_unc * 0.7
+    # self-consistency ensemble: rozptyl N čítaní obvodu — zhoda zužuje, rozptyl rozširuje
+    spread = params.get("_ensemble_spread")
+    if spread is not None:
+        u_read = max(0.05, u_read - 0.03) if spread <= 0.02 else u_read + float(spread) * 0.5
     # b) neistota DĹŽKY priečok (úmerne ich cenovému podielu); znížená keď ju potvrdí
     #    nezávislý odhad z plôch miestností, zvýšená keď si dva zdroje protirečia
     pricky_cost = pricky_mat + round(pricky_net * labor_pricky_m2)
@@ -500,6 +545,7 @@ def calculate(params: dict) -> dict:
             "zdivo_zdroj": params.get("zdivo_zdroj"),
             "uzitna_plocha_m2": uzit, "zastavena_plocha_m2": zast,
             "plochy_mistnosti_m2": rooms, "_floors_summed": floors_summed,
+            "otvory": otvory, "_ensemble_spread": spread,
             "model_uncertainty": model_unc,
             "skladba_volba": skladba_volba if assumed_skladba else None,
         },

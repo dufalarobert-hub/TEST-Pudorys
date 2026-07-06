@@ -58,6 +58,8 @@ def load_gt(include_unverified=False):
         if f.name == "TEMPLATE.json":
             continue
         gt = json.loads(f.read_text())
+        if gt.get("obvod_m") is None:
+            continue        # NEPOUŽIŤ / negatívny test (gate) — nevolaj naň extrakciu (šetrí API)
         if gt.get("verified") or include_unverified:
             gt["_gt_file"] = f.name
             out.append(gt)

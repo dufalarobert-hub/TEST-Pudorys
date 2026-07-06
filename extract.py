@@ -14,7 +14,10 @@ Poznámka k presnosti (overené probe-mi 2026-06-04):
 """
 import io
 import json
+import os
 import re
+import statistics
+from concurrent.futures import ThreadPoolExecutor
 
 import fitz  # PyMuPDF
 from PIL import Image
@@ -119,6 +122,13 @@ POSTUP:
    se symbolem otevírání (oblouk) nebo podle šířkové kóty otvoru (800, 900, 2150…).
    Do pocet_dveri počítej VŠECHNY dveře VČETNĚ vchodových (vchod se v kalkulaci
    rozlišuje automaticky). Garážová vrata do počtů NEpatří (viz 3c).
+6b. OTVORY JEDNOTLIVĚ (přesnější odpočet stěny + překlady podle rozponu): pokud jdou
+   ŠÍŘKY otvorů vyčíst (šířkové kóty u otvorů, např. 900/1200/2400, nebo VÝPIS OKEN
+   A DVEŘÍ), vyplň seznam "otvory" — položky {"typ", "sirka_m", "pocet"}:
+   typ = "okno" | "francouzske_okno" (okno až na zem) | "hs_portal" (velké posuvné
+   prosklení) | "dvere_vchod" | "dvere_vnitrni". Šířky v METRECH. Co spolehlivě
+   nevyčteš, do seznamu NEdávej — seznam smí být i prázdný (kalkulace pak použije
+   průměry). Když seznam vyplníš, počty musí sedět s pocet_oken/pocet_dveri.
    SPOLEHLIVĚJŠÍ: pokud je v dokumentu TABULKA / VÝPIS OKEN A DVEŘÍ (značky O1, O2, D1…
    s rozměry a počty kusů), použij počty a šířky ODTUD — je to tvrdší údaj než počítání
    symbolů na půdorysu. (Čti významově — výpis může být jakkoliv nadepsaný.)
@@ -152,6 +162,7 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "ma_schodiste": <true/false — je na půdorysu schodiště (= dům má pravděpodobně víc podlaží)?>,
   "ma_garaz": <true/false — je součástí domu garáž / technická místnost / dílna / vedlejší nevytápěná část? (jsou-li, jejich stěny MUSÍ být v délkách zahrnuty)>,
   "vyska_podlazi_m": <číslo nebo null>,
+  "otvory": [{"typ": "okno|francouzske_okno|hs_portal|dvere_vchod|dvere_vnitrni", "sirka_m": <číslo>, "pocet": <číslo>}, …]   (jen otvory s vyčtenou šířkou; smí být []),
   "pocet_oken": <číslo nebo null — BEZ garážových vrat>,
   "pocet_dveri": <číslo nebo null — všechny dveře VČETNĚ vchodových, BEZ garážových vrat>,
   "pocet_mistnosti": <číslo nebo null>,
@@ -162,6 +173,47 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "note": "1-2 věty: jak přesný odhad je a kde je největší riziko"
 }
 Pokud něco nelze přečíst, dej null a sniž confidence. Nevymýšlej si přesné kóty které nevidíš."""
+
+
+# JSON Schema extrakcie — pre providery so ŠTRUKTÚROVANÝM výstupom (Claude/Fable tool-use
+# ju vynúti na úrovni API; Gemini beží v JSON-mode a schému nesie prompt vyššie).
+_NUM = {"type": ["number", "null"]}
+_BOOL = {"type": "boolean"}
+EXTRACTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "typ_stavby": {"type": "string", "enum": ["rodinny_dum", "byt", "bytovy_dum", "jine"]},
+        "konstrukce": {"type": ["string", "null"], "enum": ["zdene", "drevostavba", "skelet", None]},
+        "obvod_m": _NUM, "obvod_tloustka_mm": _NUM,
+        "tloustka_z_koty": _BOOL, "ma_zateplenie": _BOOL,
+        "obvod_material": {"type": ["string", "null"]},
+        "obvod_material_trieda": {"type": ["string", "null"], "enum": ["lacne", "stredne", "drahe", None]},
+        "zdivo_zdroj": {"type": "string", "enum": ["legenda", "kóta", "odhad"]},
+        "vnitrni_nosne_m": _NUM, "vnitrni_nosne_tloustka_mm": _NUM,
+        "pricky_m": _NUM, "pricky_tloustka_mm": _NUM,
+        "plochy_mistnosti_m2": {"type": "array", "items": {"type": "number"}},
+        "uzitna_plocha_m2": _NUM, "zastavena_plocha_m2": _NUM,
+        "pocet_podlazi": _NUM, "ma_schodiste": _BOOL, "ma_garaz": _BOOL,
+        "vyska_podlazi_m": _NUM,
+        "otvory": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "typ": {"type": "string", "enum": ["okno", "francouzske_okno", "hs_portal",
+                                                    "dvere_vchod", "dvere_vnitrni"]},
+                "sirka_m": {"type": "number"},
+                "pocet": {"type": "integer"},
+            },
+            "required": ["typ", "sirka_m", "pocet"],
+        }},
+        "pocet_oken": _NUM, "pocet_dveri": _NUM, "pocet_mistnosti": _NUM,
+        "koty_mm": {"type": "array", "items": {"type": "number"}},
+        "meritko_source": {"type": "string"},
+        "confidence_0_100": {"type": "number"},
+        "co_potvrdit": {"type": "array", "items": {"type": "string"}},
+        "note": {"type": "string"},
+    },
+    "required": ["typ_stavby", "obvod_m", "confidence_0_100"],
+}
 
 
 def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None):
@@ -282,8 +334,32 @@ def extract_from_plan(path: str) -> dict:
     only = page_idx if (str(path).lower().endswith(".pdf") and n_pages > 1) else None
     images = _pages_to_images(path, only_page=only)
 
-    # model-agnostické volanie: provider (gemini/anthropic) rieši model aj fallback sám
-    text, usage, model = providers.get_provider().generate(images, EXTRACTION_PROMPT)
+    # SELF-CONSISTENCY: N nezávislých čítaní PARALELNE → medián numerických polí.
+    # AI čítanie varíruje ~7 % medzi behmi; medián z 3 to zráža pod ~3 % (PLAN_PRESNOST B3).
+    # Default 1 (šetrí API); produkcia: EXTRACT_RUNS=3. Paralelne kvôli Vercel 60 s.
+    runs = max(1, int(os.environ.get("EXTRACT_RUNS", "1")))
+    if runs == 1:
+        return _extract_once(images, page_idx, n_pages)
+    with ThreadPoolExecutor(max_workers=runs) as ex:
+        results = [r for r in ex.map(lambda _: _try_extract(images, page_idx, n_pages),
+                                     range(runs)) if r]
+    if not results:
+        raise RuntimeError("Extrakcia zlyhala vo všetkých behoch.")
+    return results[0] if len(results) == 1 else _median_merge(results)
+
+
+def _try_extract(images, page_idx, n_pages):
+    try:
+        return _extract_once(images, page_idx, n_pages)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _extract_once(images, page_idx, n_pages) -> dict:
+    # model-agnostické volanie: provider (gemini/anthropic) rieši model aj fallback sám;
+    # schema vynúti štruktúrovaný výstup (Fable tool-use / Gemini JSON-mode)
+    text, usage, model = providers.get_provider().generate(
+        images, EXTRACTION_PROMPT, schema=EXTRACTION_SCHEMA)
     data = _parse_json(text)
     data["_model"] = model
     data["_pages"] = len(images)
@@ -292,6 +368,35 @@ def extract_from_plan(path: str) -> dict:
     data["_from_project"] = n_pages > 1
     data["_usage"] = usage
     return _normalize(data)
+
+
+# polia zlučované mediánom pri self-consistency (numerické, nezávislé od seba)
+_MEDIAN_FIELDS = ("obvod_m", "obvod_tloustka_mm", "vnitrni_nosne_m", "vnitrni_nosne_tloustka_mm",
+                  "pricky_m", "pricky_tloustka_mm", "uzitna_plocha_m2", "zastavena_plocha_m2",
+                  "pocet_oken", "pocet_dveri", "pocet_mistnosti", "confidence_0_100")
+
+
+def _median_merge(results: list) -> dict:
+    """N čítaní → jedno: numerika mediánom, booleany väčšinou, zvyšok z behu
+    s obvodom najbližším mediánu (konzistentný 'kotviaci' beh)."""
+    med_obvod = statistics.median(r["obvod_m"] for r in results)
+    base = dict(min(results, key=lambda r: abs(r["obvod_m"] - med_obvod)))
+    for k in _MEDIAN_FIELDS:
+        vals = [r[k] for r in results if r.get(k) is not None]
+        if vals:
+            m = statistics.median(vals)
+            base[k] = round(m) if isinstance(base.get(k), int) else round(m, 1)
+    base["obvod_m"] = round(med_obvod, 1)
+    for k in ("ma_zateplenie", "ma_garaz", "ma_schodiste", "tloustka_z_koty"):
+        base[k] = sum(1 for r in results if r.get(k)) > len(results) / 2
+    base["_usage"] = {"in": sum(r["_usage"]["in"] for r in results),
+                      "out": sum(r["_usage"]["out"] for r in results)}
+    base["_model"] = f"{base.get('_model', '?')} ×{len(results)} (medián)"
+    # rozptyl behov na obvode → signál pre band (0 = úplná zhoda)
+    if med_obvod:
+        spread = (max(r["obvod_m"] for r in results) - min(r["obvod_m"] for r in results)) / med_obvod
+        base["_ensemble_spread"] = round(spread, 3)
+    return base
 
 
 def _num(v, default=None):
@@ -311,6 +416,16 @@ def _normalize(d: dict) -> dict:
     if not uzit and rooms:
         uzit = round(sum(rooms), 1)
     d["uzitna_plocha_m2"] = uzit
+    # itemizované otvory: validuj typ aj šírku (0.3–6 m), zvyšok zahoď (pricing má fallback)
+    otvory = []
+    for o in (d.get("otvory") or []):
+        if not isinstance(o, dict):
+            continue
+        typ, s = o.get("typ"), _num(o.get("sirka_m"))
+        if typ in ("okno", "francouzske_okno", "hs_portal", "dvere_vchod", "dvere_vnitrni") \
+                and s and 0.3 <= s <= 6.0:
+            otvory.append({"typ": typ, "sirka_m": round(s, 2),
+                           "pocet": max(1, int(_num(o.get("pocet"), 1) or 1))})
     return {
         # konzervatívne defaulty: keď model netrafí enum, beriem ako murovaný RD (nech neodmietneme reálny dom)
         "typ_stavby": (d.get("typ_stavby") if d.get("typ_stavby") in
@@ -336,6 +451,7 @@ def _normalize(d: dict) -> dict:
         "ma_schodiste": bool(d.get("ma_schodiste")),
         "ma_garaz": bool(d.get("ma_garaz")),
         "vyska_podlazi_m": _num(d.get("vyska_podlazi_m"), 2.8) or 2.8,
+        "otvory": otvory,
         "pocet_oken": int(_num(d.get("pocet_oken"), 0) or 0),
         "pocet_dveri": int(_num(d.get("pocet_dveri"), 0) or 0),
         "pocet_mistnosti": int(_num(d.get("pocet_mistnosti"), 0) or 0),
@@ -345,6 +461,7 @@ def _normalize(d: dict) -> dict:
         "co_potvrdit": d.get("co_potvrdit") or [],
         "note": d.get("note") or "",
         "_model": d.get("_model", ""),
+        "_ensemble_spread": d.get("_ensemble_spread"),
         "_pages": d.get("_pages", 1),
         "_usage": d.get("_usage", {"in": 0, "out": 0}),
         "_page_idx": int(d.get("_page_idx", 0) or 0),

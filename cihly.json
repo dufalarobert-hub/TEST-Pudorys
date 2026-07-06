@@ -22,6 +22,8 @@
   "praca_priecky": {"base_kc_m2": 283, "per_mm": 0.90, "rozsah_mult": [0.85, 1.20]},
 
   "preklad_kc_otvor": 2200,
+  "preklad_nosny_kc_sirka": {"1.0": 2200, "1.5": 3200, "2.0": 5200, "2.5": 5900, "3.0": 7500, "4.0": 15000, "5.0": 20000},
+  "_pozn_preklad_sirka": "Cena nosného prekladu podľa SVETLOSTI otvoru (m) — lineárna interpolácia. Odvodené z KP7 krivky DEK 2026 (4 ks × cena dĺžky svetlosť+uloženie + osadenie ~400-500) do 3 m; nad 3,5 m KP XL/ŽB (cenník WB: XL 550 = 23146 bez DPH). Použije sa LEN keď AI vyčíta šírky otvorov (pole otvory); inak paušál preklad_kc_otvor. Viď ZNALOSTI_ROZPOCTAR.md §4.",
   "_pozn_preklad": "NOSNÝ preklad (okná + vchod, v nosnej/obvodovej stene): KP7/U-profil. Ytong U-profil ~1400-1800, Porotherm KP7 pri širokých oknách 4000-9000. 2200 = vážený stred.",
   "preklad_pricka_kc_otvor": 700,
   "_pozn_preklad_pricka": "PRIEČKOVÝ preklad (vnútorné dvere v priečkach): lacný plochý / Ytong NEP. Overené na reálnej Ytong ponuke RD Jiráský: NEP 100-1250 ~500-725 Kč/otvor. Bez tohto rozlíšenia (paušál 2200 na všetko) sa preklady na dverami bohatých/viacpodlažných domoch predražovali o desiatky tisíc.",

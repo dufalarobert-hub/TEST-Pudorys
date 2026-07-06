@@ -288,6 +288,13 @@ function Result({data,form,upd,recalc,loading,applyClaude}){
       </div>
     </div>
 
+    {/* KOMENTÁŘ ROZPOČTÁŘE — souvislé lidské shrnutí čísel a nejistot (AI, graceful) */}
+    {data.komentar && data.komentar.available && data.komentar.text &&
+      <div className="card" style={{background:'#faf7f2',borderColor:'#e2d6c3'}}>
+        <h3>👷 Komentář rozpočtáře</h3>
+        <p style={{margin:'8px 0 0',lineHeight:1.55}}>{data.komentar.text}</p>
+      </div>}
+
     {/* VARIANTA SKLADBY STĚNY — když si nejsme jistí (500 mm = plné zdivo vs zdivo+zateplení) */}
     {r.assumed_skladba && r.skladba_variants &&
       <div className="card">

@@ -1,0 +1,518 @@
+{
+ "stamp": "20260706_174916",
+ "label": "baseline pred Fazou 1 (Gemini 3.1-pro)",
+ "runs": 1,
+ "models": [
+  "models/gemini-3.1-pro-preview"
+ ],
+ "n_vykresov": 9,
+ "mape": {
+  "obvod_m": 6.452848425095192,
+  "obvod_tloustka_mm": 4.6875,
+  "vnitrni_nosne_m": 163.9814814814815,
+  "pricky_m": 61.10289927936987,
+  "pocet_oken": 58.95833333333333,
+  "pocet_dveri": 19.460227272727273,
+  "zastavena_plocha_m2": 11.248568223577506,
+  "uzitna_plocha_m2": 0.0
+ },
+ "variance": {},
+ "price_mape": null,
+ "rows": [
+  {
+   "soubor": "test_podorysy/plan_49661930.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 38.96,
+     "got": 45.0,
+     "err_pct": 15.50308008213552,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 350,
+     "got": 350.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 6.5,
+     "got": 0.0,
+     "err_pct": 100.0,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 20.0,
+     "got": 25.0,
+     "err_pct": 25.0,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 8,
+     "got": 8.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 8,
+     "got": 8.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 88.9,
+     "got": 95.0,
+     "err_pct": 6.861642294713153,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 79.87,
+     "got": 79.87,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49661933.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 43.5,
+     "got": 44.0,
+     "err_pct": 1.1494252873563218,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 450,
+     "got": 450.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 0,
+     "got": 0.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 26.0,
+     "got": 22.0,
+     "err_pct": 15.384615384615385,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 6,
+     "got": 10.0,
+     "err_pct": 66.66666666666666,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 8,
+     "got": 7.0,
+     "err_pct": 12.5,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 91.0,
+     "got": 95.0,
+     "err_pct": 4.395604395604396,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 73.91,
+     "got": 73.91,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49662023.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 43.5,
+     "got": 43.1,
+     "err_pct": 0.9195402298850541,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 450,
+     "got": 450.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 0,
+     "got": 8.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 26.0,
+     "got": 22.0,
+     "err_pct": 15.384615384615385,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 6,
+     "got": 7.0,
+     "err_pct": 16.666666666666664,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 8,
+     "got": 8.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 90.8,
+     "got": 115.0,
+     "err_pct": 26.651982378854626,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 73.91,
+     "got": 73.91,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49665296.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 46.4,
+     "got": 46.5,
+     "err_pct": 0.2155172413793134,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 250,
+     "got": 250.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 15.0,
+     "got": 12.0,
+     "err_pct": 20.0,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 16.0,
+     "got": 25.0,
+     "err_pct": 56.25,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 3,
+     "got": 7.0,
+     "err_pct": 133.33333333333331,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 7,
+     "got": 7.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 115.7,
+     "got": 115.7,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 201.67,
+     "got": 201.67,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49665297.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 62.7,
+     "got": 72.8,
+     "err_pct": 16.108452950558206,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 250,
+     "got": 250.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 18.0,
+     "got": 15.5,
+     "err_pct": 13.88888888888889,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 10.0,
+     "got": 35.2,
+     "err_pct": 252.00000000000006,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 5,
+     "got": 12.0,
+     "err_pct": 140.0,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 9,
+     "got": 18.0,
+     "err_pct": 100.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 168.0,
+     "got": 240.0,
+     "err_pct": 42.857142857142854,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 201.67,
+     "got": 201.67,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49673151.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 57.9,
+     "got": 43.9,
+     "err_pct": 24.179620034542314,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 405,
+     "got": 405.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 4.6,
+     "got": 0.0,
+     "err_pct": 100.0,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 51.0,
+     "got": 29.5,
+     "err_pct": 42.15686274509804,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 10,
+     "got": 9.0,
+     "err_pct": 10.0,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 11,
+     "got": 11.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 171.6,
+     "got": 169.3,
+     "err_pct": 1.3403263403263306,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 141.56,
+     "got": 141.56,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49676022.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 47.7,
+     "got": 47.7,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 500,
+     "got": 500.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 16.0,
+     "got": 0.0,
+     "err_pct": 100.0,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 20.0,
+     "got": 35.0,
+     "err_pct": 75.0,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 5,
+     "got": 9.0,
+     "err_pct": 80.0,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 8,
+     "got": 10.0,
+     "err_pct": 25.0,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 117.95,
+     "got": 118.0,
+     "err_pct": 0.04239084357778478,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 83.6,
+     "got": 83.6,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49681696.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 55.84,
+     "got": 55.84,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": 480,
+     "got": 300.0,
+     "err_pct": 37.5,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": 2.0,
+     "got": 15.0,
+     "err_pct": 650.0,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 40.0,
+     "got": 35.0,
+     "err_pct": 12.5,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": 8,
+     "got": 10.0,
+     "err_pct": 25.0,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": 11,
+     "got": 13.0,
+     "err_pct": 18.181818181818183,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 155.4,
+     "got": 142.0,
+     "err_pct": 8.622908622908627,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 121.35,
+     "got": 121.35,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  },
+  {
+   "soubor": "test_podorysy/plan_49681853.jpg",
+   "verified": false,
+   "model": "models/gemini-3.1-pro-preview",
+   "fields": {
+    "obvod_m": {
+     "gt": 52.0,
+     "got": 52.0,
+     "err_pct": 0.0,
+     "var_pct": null
+    },
+    "obvod_tloustka_mm": {
+     "gt": null,
+     "got": 300.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "vnitrni_nosne_m": {
+     "gt": null,
+     "got": 0.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "pricky_m": {
+     "gt": 32.0,
+     "got": 50.0,
+     "err_pct": 56.25,
+     "var_pct": null
+    },
+    "pocet_oken": {
+     "gt": null,
+     "got": 0.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "pocet_dveri": {
+     "gt": null,
+     "got": 0.0,
+     "err_pct": null,
+     "var_pct": null
+    },
+    "zastavena_plocha_m2": {
+     "gt": 137.6,
+     "got": 152.0,
+     "err_pct": 10.465116279069772,
+     "var_pct": null
+    },
+    "uzitna_plocha_m2": {
+     "gt": 119.4,
+     "got": 119.4,
+     "err_pct": 0.0,
+     "var_pct": null
+    }
+   }
+  }
+ ]
+}

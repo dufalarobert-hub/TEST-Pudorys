@@ -17,6 +17,7 @@ from flask import Flask, request, jsonify
 
 import config
 import extract
+import komentar
 import pricing
 import claude_review
 import claude_vision
@@ -111,6 +112,7 @@ def _analyze_multifloor(files):
 
     agg = _aggregate_floors(floors)
     result = pricing.calculate(agg)
+    kom = komentar.compose(result, agg)
     # INTEGRACE (cihlomat): lead-capture rovnako ako pri single (result + _from_project).
     return jsonify({
         "ok": True, "gate": "ACCEPT", "gate_msg": None, "multifloor": True,
@@ -122,6 +124,7 @@ def _analyze_multifloor(files):
         "vision": {"available": False, "reason": "multifloor", "escalated": False},
         "claude": {"available": False, "reason": "multifloor"},
         "reconcile": None,
+        "komentar": kom,
         "pricing": result, "params": result["used_params"],
     })
 
@@ -197,6 +200,9 @@ def api_analyze():
 
     result = pricing.calculate(params)
 
+    # Komentár rozpočtára — súvislý ľudský odsek z čísel a varovaní (graceful bez kľúča).
+    kom = komentar.compose(result, params)
+
     # INTEGRACE (cihlomat): zde se napojí lead-capture + ukládání do Railway.
     # K dispozici: result (výpočet) + extraction["_from_project"] (= projektová dokumentace
     # = silný lead). Až přibude kontakt (e-mail/telefon), POST {kontakt + result + _from_project}
@@ -210,6 +216,7 @@ def api_analyze():
         "vision": vision,
         "reconcile": merged,
         "claude": claude,
+        "komentar": kom,
         "pricing": result,
         "params": result["used_params"],
     })
