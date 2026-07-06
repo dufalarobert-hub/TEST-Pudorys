@@ -118,7 +118,8 @@ def main(argv):
             print(f"{name:<26}  VŠETKY BEHY ZLYHALI: {errs[:1]}")
             continue
 
-        row = {"soubor": gt["soubor"], "verified": bool(gt.get("verified")), "fields": {}}
+        row = {"soubor": gt["soubor"], "verified": bool(gt.get("verified")),
+               "model": last.get("_model", "?"), "fields": {}}
         for k, _w in FIELDS:
             truth = gt.get(k)
             got = statistics.median(vals[k]) if vals[k] else None
@@ -184,6 +185,7 @@ def main(argv):
     stamp = time.strftime("%Y%m%d_%H%M%S")
     out = {
         "stamp": stamp, "label": label, "runs": runs,
+        "models": sorted({r.get("model", "?") for r in report_rows}),
         "n_vykresov": len(report_rows),
         "mape": {k: statistics.mean(v) for k, v in all_errs.items() if v},
         "variance": {k: statistics.mean(v) for k, v in all_vars.items() if v},

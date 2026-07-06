@@ -26,6 +26,11 @@ GEMINI_VISION_FALLBACK = "models/gemini-3.5-flash"
 GEMINI_PICK_MODEL = os.environ.get("GEMINI_PICK_MODEL", "models/gemini-3.5-flash")
 GEMINI_THINKING_BUDGET = int(os.environ.get("GEMINI_THINKING_BUDGET", "512"))
 
+# Alternatívny extractor: Anthropic Claude (Fable). Prepnutie: EXTRACTOR_PROVIDER=anthropic.
+# Architektúra je model-agnostická (viď providers.py) — výmena modelu = env, nie kód.
+ANTHROPIC_VISION_MODEL = os.environ.get("ANTHROPIC_VISION_MODEL", "claude-fable-5")
+ANTHROPIC_PICK_MODEL = os.environ.get("ANTHROPIC_PICK_MODEL", "claude-haiku-4-5-20251001")
+
 # Zapisovateľný adresár pre dočasné uploady (Vercel: len /tmp; lokálne: temp).
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR") or (Path(tempfile.gettempdir()) / "cihlomat_uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)

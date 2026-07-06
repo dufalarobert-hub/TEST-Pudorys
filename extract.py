@@ -1,8 +1,11 @@
 """
-Extrakcia parametrov stavby z pôdorysu pomocou Gemini vízie.
+Extrakcia parametrov stavby z pôdorysu pomocou AI vízie (model-agnostická).
 
 Vstup: cesta k PDF / PNG / JPG (pôdorys rodinného domu).
 Výstup: dict s dĺžkou obvodového zdiva, priečok, kótami, plochami a confidence.
+
+MODEL: volí sa cez providers.py (EXTRACTOR_PROVIDER=gemini|anthropic) — tento
+modul model NEPOZNÁ, stavia prompt, renderuje PDF a normalizuje výstup.
 
 Poznámka k presnosti (overené probe-mi 2026-06-04):
   - Obvod z kót = spoľahlivý (priama matematika z vonkajších rozmerov).
@@ -15,10 +18,8 @@ import re
 
 import fitz  # PyMuPDF
 from PIL import Image
-from google import genai
-from google.genai import types
 
-import config
+import providers
 
 MAX_SCAN_PAGES = 25     # koľko strán projektovej dokumentácie prejdeme pri hľadaní pôdorysu
 RENDER_ZOOM = 4.0       # DPI faktor pre render strán (3.0→4.0: viac detailu na čítanie drobných kót stien)
@@ -184,7 +185,8 @@ def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None):
     return out
 
 
-PLAN_PICK_PROMPT = """Dostáváš očíslované stránky (0, 1, 2, …) stavební dokumentace rodinného domu.
+PLAN_PICK_PROMPT = """Dostáváš stránky stavební dokumentace rodinného domu — obrázky jsou
+V POŘADÍ a číslují se od nuly (první obrázek = stránka 0, druhý = 1, …).
 Najdi stránku, která je PŮDORYS PŘÍZEMÍ (1.NP) — okótovaný plán půdorysu s místnostmi a kótami.
 NENÍ to: řez, pohled (fasáda), situace, výkres krovu/základů/stropů, ani textová zpráva/tabulka.
 Když je víc půdorysů různých podlaží, vyber PŘÍZEMÍ (1.NP).
@@ -234,8 +236,8 @@ def _pick_plan_page(path: str):
         return 0, n
     # malé projekty: vezmi všetky strany; veľké: len výkresových kandidátov
     cand = list(range(min(n, MAX_SCAN_PAGES))) if n <= MAX_PLAN_CANDIDATES else _drawing_candidate_idxs(doc)
-    parts = []
-    for pos, i in enumerate(cand):
+    imgs = []
+    for i in cand:
         pix = doc[i].get_pixmap(matrix=fitz.Matrix(1.4, 1.4))
         im = Image.open(io.BytesIO(pix.tobytes("png")))
         if max(im.size) > 760:
@@ -243,16 +245,12 @@ def _pick_plan_page(path: str):
             im = im.resize((int(im.width * s), int(im.height * s)))
         buf = io.BytesIO()
         im.convert("RGB").save(buf, format="PNG")
-        parts.append(f"Stránka {pos}:")
-        parts.append(types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png"))
+        imgs.append(buf.getvalue())
     doc.close()
-    parts.append(PLAN_PICK_PROMPT)
     try:
-        client = genai.Client(api_key=config.get_gemini_key())
-        cfg = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_budget=256))
-        # výber strany = lacný flash (netreba drahý pro na jednoduché "ktorá strana je pôdorys")
-        resp = client.models.generate_content(model=config.GEMINI_PICK_MODEL, contents=parts, config=cfg)
-        d = _parse_json(resp.text)
+        # výber strany = lacný model (cheap=True); provider si model zvolí sám
+        text, _usage, _model = providers.get_provider().generate(imgs, PLAN_PICK_PROMPT, cheap=True)
+        d = _parse_json(text)
         pos = int(_num(d.get("plan_page"), 0) or 0)
         if not d.get("found") or pos < 0 or pos >= len(cand):
             pos = 0
@@ -278,32 +276,17 @@ def extract_from_plan(path: str) -> dict:
     page_idx, n_pages = _pick_plan_page(path)          # medzikrok pre projektovú dokumentáciu
     only = page_idx if (str(path).lower().endswith(".pdf") and n_pages > 1) else None
     images = _pages_to_images(path, only_page=only)
-    parts = [types.Part.from_bytes(data=img, mime_type="image/png") for img in images]
-    parts.append(EXTRACTION_PROMPT)
 
-    client = genai.Client(api_key=config.get_gemini_key())
-    cfg = types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=config.GEMINI_THINKING_BUDGET))
-    last_err = None
-    for model in (config.GEMINI_VISION_MODEL, config.GEMINI_VISION_FALLBACK):
-        try:
-            resp = client.models.generate_content(model=model, contents=parts, config=cfg)
-            data = _parse_json(resp.text)
-            data["_model"] = model
-            data["_pages"] = len(images)
-            data["_page_idx"] = page_idx
-            data["_pages_total"] = n_pages
-            data["_from_project"] = n_pages > 1
-            um = getattr(resp, "usage_metadata", None)
-            data["_usage"] = {
-                "in": getattr(um, "prompt_token_count", 0) or 0,
-                "out": getattr(um, "candidates_token_count", 0) or 0,
-            } if um else {"in": 0, "out": 0}
-            return _normalize(data)
-        except Exception as e:  # noqa: BLE001
-            last_err = e
-            continue
-    raise RuntimeError(f"Extrakcia zlyhala: {last_err}")
+    # model-agnostické volanie: provider (gemini/anthropic) rieši model aj fallback sám
+    text, usage, model = providers.get_provider().generate(images, EXTRACTION_PROMPT)
+    data = _parse_json(text)
+    data["_model"] = model
+    data["_pages"] = len(images)
+    data["_page_idx"] = page_idx
+    data["_pages_total"] = n_pages
+    data["_from_project"] = n_pages > 1
+    data["_usage"] = usage
+    return _normalize(data)
 
 
 def _num(v, default=None):
