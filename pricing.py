@@ -120,6 +120,11 @@ def calculate(params: dict) -> dict:
     obvod_m = float(params.get("obvod_m") or 0)
     pricky_m = float(params.get("pricky_m") or 0)
     vyska = float(params.get("vyska_podlazi_m") or _CFG["vyska_podlazia_m"])
+    # MUROVACIA VÝŠKA (ÚRS 801-1, viď ZNALOSTI_ROZPOCTAR.md §1–2): murivo sa počíta NETTO —
+    # objem venca sa z muriva ODPOČÍTAVA (veniec je samostatná položka). Predtým sa murovalo
+    # na plnú výšku podlažia A veniec sa účtoval zvlášť = dvojpočet ~0.25 m (~9 % obvod. zdiva).
+    # Priečky sa murujú po spodok stropu (≈ rovnaká úroveň) → rovnaký odpočet.
+    mur_vyska = max(vyska - float(_CFG.get("venec_vyska_m", 0.25)), 2.0)
     podlazi = int(params.get("pocet_podlazi") or 1)
     okna = int(params.get("pocet_oken") or 0)
     dvere = int(params.get("pocet_dveri") or 0)
@@ -166,7 +171,7 @@ def calculate(params: dict) -> dict:
     nosne_th = float(nosne_t) if nosne_th_read else 250.0
 
     # ===== 1. OBVODOVÉ ZDIVO (materiál = Kč/m³ × hrúbka) =====
-    obvod_gross = obvod_m * vyska * podlazi
+    obvod_gross = obvod_m * mur_vyska * podlazi
     # okná sa opakujú na KAŽDOM podlaží (čítame ich z 1.NP), vchodové dvere len raz (prízemie)
     obvod_openings = okna * WINDOW_M2 * podlazi + ENTRANCE_DOOR_M2
     obvod_net = max(obvod_gross - obvod_openings, 0)
@@ -189,7 +194,7 @@ def calculate(params: dict) -> dict:
 
     # ===== 2. VNÚTORNÉ NOSNÉ STENY (rovnaký materiál ako obvod, vlastná hrúbka) =====
     nosne_m = float(params.get("vnitrni_nosne_m") or 0)
-    nosne_net = nosne_m * vyska * podlazi   # nosné majú málo otvorov, neodpočítavame
+    nosne_net = nosne_m * mur_vyska * podlazi   # nosné majú málo otvorov, neodpočítavame
     nosne_price = round(tier["kc_m3"] * nosne_th / 1000)
     nosne_mat = round(nosne_net * nosne_price)
     if nosne_m > 0:
@@ -224,7 +229,7 @@ def calculate(params: dict) -> dict:
             pricky_zdroj = "z plôch miestností"
 
     # ===== 3. VNÚTORNÉ PRIEČKY (materiál = Kč/m³ × hrúbka) =====
-    pricky_gross = pricky_m * vyska * podlazi
+    pricky_gross = pricky_m * mur_vyska * podlazi
     # vnútorné dvere (dvere − 1 vchod) sa tiež opakujú na každom podlaží
     pricky_openings = max(0, dvere - 1) * INTERIOR_DOOR_M2 * podlazi
     pricky_net = max(pricky_gross - pricky_openings, 0)
@@ -258,6 +263,14 @@ def calculate(params: dict) -> dict:
         items.append(_item("Preklady nad otvormi",
                            f"{nosne_otvory}× nosný (okná+vchod) + {pricky_otvory}× příčkový (dveře)",
                            openings, "otvor", round(preklad_cost / openings), preklad_cost))
+    # GARÁŽOVÁ BRÁNA = veľký rozpon (~2,5–5 m), KP7 nestačí (končí na 3,5 m dĺžky) →
+    # KP XL / ŽB, rádovo drahší než bežný okenný preklad (viď ZNALOSTI_ROZPOCTAR.md §4).
+    # Len raz (prízemie) — garáž sa na poschodí neopakuje.
+    if params.get("ma_garaz"):
+        garaz_kc = _CFG.get("preklad_garaz_kc", 18000)
+        items.append(_item("Preklad garážové brány ⚠odhad",
+                           "velký rozpon ~2,5–5 m (KP XL / ŽB), jen přízemí",
+                           1, "ks", garaz_kc, garaz_kc))
 
     # ===== 4. ŽB VĚNEC — nielen po obvode, ale aj nad vnútornými nosnými stenami (nesú strop) =====
     venec_m = (obvod_m + nosne_m) * podlazi
