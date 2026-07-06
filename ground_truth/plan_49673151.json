@@ -1,0 +1,46 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49673151.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-05), čaká na ľudské overenie",
+  "datum": "2026-07-05",
+
+  "obvod_m": 57.9,
+  "_obvod_vypocet": "L-tvar: celková šírka 15230 (kóta 8325+6905), ľavé krídlo výška 13720, pravé krídlo výška 8310, zárez vpravo hore 6905×5410 (13720-8310=5410 sedí s kótou 5410). Pri jednom pravouhlom záreze obvod = obvod opísaného obdĺžnika: 2×(15.23+13.72)=57.90 m. NEISTOTA: pri severnej stene obývačky (segment 900 pri kóte okna 2400/2330) sa zdá byť malý uskok steny — ak áno, obvod +~0.3-0.5 m; overiť.",
+  "obvod_tloustka_mm": 405,
+  "_tloustka_zdroj": "kóta 405 opakovane na všetkých fasádach (rohy hore/dole/vľavo/vpravo); pravdepodobne murivo 380/400 + omietky, vo výkrese jednotne 405",
+  "vnitrni_nosne_m": 4.6,
+  "_nosne_poznamka": "NEISTÉ — jediný kandidát je zvislá stena medzi izbou 107 + skladom 108 a obývačkou 110 (pokračovanie línie fasády zárezu; kóty 3505 + otvor 1100 bez dverí): dĺžka ~4.6 m, kreslená hrubšie než priečky (~200-250 mm z mierky, hrúbka nie je okótovaná). Všetky ostatné vnútorné steny majú kótu 125 = priečky. Ak je aj táto stena 125, nosné = 0 (bungalov, možný väzníkový krov). OVERIŤ hrúbku ručne.",
+  "pricky_m": 51.0,
+  "_pricky_poznamka": "ODHAD ±10 % zo súčtu kótovaných úsekov (všetky vnútorné kóty 125 mm): zvislé — 105|106 4.4; kúpeľňa|chodba 3.7; 102|101/chodba 4.55; 107+108 západná pri chodbe ~5.5; 101|112, 112|111, 111|110 3×2.77=8.3. Vodorovné — 105|104 3.2; 106|107 4.3; 104|102 3.1; ohrádka WC 103 ~2.0; nad radom 101/112/111 ~5.7; sklad 108 sever+juh 2×3.07=6.1. Spolu ~50.9 m. Nezahŕňa spornú stenu pri 110 (uvedená v nosných).",
+  "pricky_tloustka_mm": 125,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": 1.5, "pocet": 3, "_pozn": "sever: izby 105 a 106 (kóty 1500, výška 1400, parapet 900); juh: izba 102 (1500, 1400/900)"},
+    {"typ": "okno", "sirka_m": 0.7, "pocet": 1, "_pozn": "východná stena izby 107 pri záreze — úzke francúzske okno, kóty 700, výška 2000, parapet 0"},
+    {"typ": "okno", "sirka_m": 0.9, "pocet": 2, "_pozn": "západ: kúpeľňa 104 (kóta 900, výška 2300?, parapet 0 — NEISTÉ, výška 2300 v kúpeľni je nezvyklá, overiť) a východná stena obývačky 110 (900, 2300/0)"},
+    {"typ": "okno", "sirka_m": 1.2, "pocet": 1, "_pozn": "juh, TM 112 — kóta 1200, výška 600, parapet 1700 (malé vysoko osadené okno)"},
+    {"typ": "okno", "sirka_m": 1.8, "pocet": 1, "_pozn": "juh, obývačka 110 — kóta 1800, výška 1400, parapet 900; NEISTÉ priradenie v rade kót 2705/1800/3035, overiť"},
+    {"typ": "okno", "sirka_m": 2.4, "pocet": 1, "_pozn": "sever obývačky 110 v záreze — portál/fix, kóty 2400/2330, parapet zrejme 0"},
+    {"typ": "okno", "sirka_m": 3.035, "pocet": 1, "_pozn": "juh obývačky 110 — veľký presklený portál (kóta 3035, pri JV rohu); NAJNEISTEJŠIE — môže ísť o HS portál rátaný ako dvere, overiť"},
+    {"typ": "dvere_vchod", "sirka_m": 1.0, "pocet": 1, "_pozn": "juh, zádverie 101 — kóta 1000/2150"},
+    {"typ": "dvere_vnitrni", "sirka_m": 0.8, "pocet": 7, "_pozn": "kóty 800/1970: izby 105, 106, 107, 102, zádverie 101→chodba, sklad 108, TM 112"},
+    {"typ": "dvere_vnitrni", "sirka_m": 0.7, "pocet": 3, "_pozn": "kóty 700/1970: kúpeľňa 104, WC 103; + špajza 111 (krídlo vidno, šírka neokótovaná — odhad 700)"},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": 10,
+  "pocet_dveri": 11,
+  "_otvory_poznamka": "Chodba 109 → obývačka 110: otvorený priechod 1100 bez dverí (čiarkovane) — nezarátaný do dverí.",
+
+  "zastavena_plocha_m2": 171.6,
+  "_zastavena_vypocet": "15.23×13.72 − zárez 6.905×5.41 = 208.96 − 37.36 = 171.6 m²",
+  "uzitna_plocha_m2": 141.56,
+  "_uzitna_zdroj": "súčet výmer miestností z výkresu: 101 zádverie 6.65 + 102 pokoj 14.11 + 103 WC 1.10 + 104 kúpeľňa 9.76 + 105 pokoj 13.64 + 106 pokoj 12.98 + 107 pokoj 13.07 + 108 sklad 3.83 + 109 chodba 11.13 + 110 obývačka+KK 46.81 + 111 špajza 3.30 + 112 TM 5.18 = 141.56 m²",
+  "pocet_podlazi": 1,
+  "ma_garaz": false,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Bungalov 5+KK v tvare L (zárez vpravo hore), miestnosti číslované 101-112, TM = technická miestnosť. Najneistejšie: (1) hrúbka steny medzi 107/108 a obývačkou — nosná ~250 vs. priečka 125; (2) rozklad južnej fasády obývačky na otvory 1800 + 3035 (rad kót 1200/2705/1800/3035); (3) výška okna kúpeľne (2300/0?). Dĺžka priečok je súčet z kót, ale ±10 %."
+}

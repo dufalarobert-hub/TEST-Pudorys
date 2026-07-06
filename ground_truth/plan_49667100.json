@@ -1,0 +1,30 @@
+{
+  "_komentar": "DRAFT od Claude. Výkres NIE JE pôdorys — textový dokument (cenová ponuka projekčných prác).",
+  "soubor": "test_podorysy/plan_49667100.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": null,
+  "_obvod_vypocet": null,
+  "obvod_tloustka_mm": null,
+  "_tloustka_zdroj": null,
+  "vnitrni_nosne_m": null,
+  "_nosne_poznamka": null,
+  "pricky_m": null,
+  "_pricky_poznamka": null,
+  "pricky_tloustka_mm": null,
+
+  "otvory": [],
+  "pocet_oken": null,
+  "pocet_dveri": null,
+
+  "zastavena_plocha_m2": null,
+  "uzitna_plocha_m2": null,
+  "pocet_podlazi": null,
+  "ma_garaz": null,
+
+  "ref_cena_kc": 177000,
+  "ref_cena_typ": "cena projektovej dokumentácie pre stavebné povolenie RD (nie cena stavby!), bez DPH; z toho inžinierske činnosti 25 000 Kč",
+  "poznamky": "NEPOUŽIŤ: nie je pôdorys — screenshot cenovej ponuky projektovej dokumentácie (Průběžná činnost, Termín, Způsob předání, Platební podmínky; celkom 177 000 Kč bez DPH). Žiadne stavebné rozmery na odčítanie."
+}

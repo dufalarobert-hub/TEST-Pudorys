@@ -1,0 +1,40 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49676022.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 47.7,
+  "_obvod_vypocet": "obdĺžnik 16.85 × 7.00 m (celkové kóty 16850 × 7000 mm) → 2×(16.85+7.00) = 47.70; dom bez zalomení. Prerušovaná stavba vľavo dole (veľký obdĺžnik čiarkovane) do obvodu NEZAPOČÍTANÁ — vyzerá ako obrys inej stavby/prístrešku, nie je súčasť tohto podlažia",
+  "obvod_tloustka_mm": 500,
+  "_tloustka_zdroj": "kóta 500 opakovane na oboch koncoch kótovacích reťazcov (500 + interiér + 500 = celkový rozmer)",
+  "vnitrni_nosne_m": 16.0,
+  "_nosne_poznamka": "NEISTÉ — dve pozdĺžne steny lemujúce chodbu (kóta chodby 8000 dlhá, šírka 1200) sú kreslené hrubo/plné, tipujem nosné ~2×8 m. ALE väčšina vnútorných kót ukazuje 150 mm — možno sú VŠETKY vnútorné steny priečky a strop nesie obvod (rozpon 6 m). NUTNE overiť ručne",
+  "pricky_m": 20.0,
+  "_pricky_poznamka": "DRAFT odhad — priečne steny medzi izbami (WC, šatne, kúpeľne, schodisko), hrúbka z kót 150 mm; hĺbky miestností ~2.0–2.9 m, spolu ~8 priečnych stien + steny kúpeľní. Ak steny chodby NIE sú nosné, pripočítať k priečkam ďalších ~16 m",
+  "pricky_tloustka_mm": 150,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": 1.2, "pocet": 2, "_pozn": "pravá štítová stena, kóty 1200+1200 (izby 16,70 m²)"},
+    {"typ": "okno", "sirka_m": null, "pocet": 3, "_pozn": "NEISTÉ — prerušenia v ľavej stene (pokoj 12,80) a pravdepodobne okná WC/kúpeľní; šírky sa nedajú spoľahlivo odčítať"},
+    {"typ": "dvere_vchod", "sirka_m": null, "pocet": 0, "_pozn": "na tomto podlaží nevidím vchodové dvere — asi ide o podlažie so spálňami, vstup na inom výkrese"},
+    {"typ": "dvere_vnitrni", "sirka_m": 0.8, "pocet": 8, "_pozn": "kóty 800/1970 (3×) a 700/1970 (5×) pri oblúčikoch otvárania"},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": 5,
+  "pocet_dveri": 8,
+
+  "zastavena_plocha_m2": 117.95,
+  "uzitna_plocha_m2": 83.6,
+  "_uzitna_zdroj": "súčet plôch napísaných v miestnostiach: 12.80+3.20+5.00+16.70+9.60+5.90+5.00+8.70+16.70 = 83.6 m² (len TOTO podlažie, bez schodiska)",
+  "pocet_podlazi": 2,
+  "_podlazi_poznamka": "NEISTÉ — je tu schodisko, čiže existuje ďalšie podlažie; ale výkres ukazuje len jedno (chodba ±0.000). Dispozícia (len spálne+kúpeľne, žiadna kuchyňa/obývačka) naznačuje, že obytná časť je inde",
+  "ma_garaz": false,
+  "_garaz_poznamka": "čiarkovaný obrys stavby vľavo dole môže byť garáž/prístrešok, ale nie je označený — nechávam false",
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Úzky dlhý dom 16.85×7.0 m, stredová chodba, izby po oboch stranách, schodisko. Výkres zachytáva len 1 podlažie — obvod/priečky platia pre toto podlažie. Najneistejšie: nosné vs. priečky pri chodbe a počet/šírky okien mimo pravej steny."
+}

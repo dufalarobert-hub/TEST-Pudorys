@@ -1,0 +1,35 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49681853.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 52.0,
+  "_obvod_vypocet": "L-tvar: bounding box 17.10 × 8.90 m → 2×(17.10+8.90) = 52.0 m (L bez ďalších zalomení má obvod = bounding box; malé zalomenie pri Sklad+TM vpravo pridá zanedbateľne, notch vľavo dole ~7.5×1.94 obvod nemení). POZOR: kóty sú NEKONZISTENTNÉ — ľavá strana 6.59+1.94=8.53, pravá 4.80+3.65=8.45, ale celková 8.90; horný reťazec 6.79+1.00+1.27+2.12+2.04+2.51=15.73 vs. celková 17.10. Amatérsky plánik, obvod ber ako ~51–52 m",
+  "obvod_tloustka_mm": null,
+  "_tloustka_zdroj": "nedá sa odčítať — schematický room-planner výkres, hrúbky stien nie sú kótované (nakreslené ~symbolicky hrubé)",
+  "vnitrni_nosne_m": null,
+  "_nosne_poznamka": "nedá sa odčítať — všetky vnútorné steny nakreslené rovnakou hrúbkou, žiadne kóty hrúbok",
+  "pricky_m": 32.0,
+  "_pricky_poznamka": "DRAFT hrubý odhad z dispozície (deliace steny špajza/WC/zádverie/kúpeľňa/sklad ~10 m, steny chodby ~10 m, ložnica/pokoj/pokoj ~8 m, kúpeľňa 3.4 + neoznačená miestnosť ~4 m); hrúbku neviem — schematický výkres",
+  "pricky_tloustka_mm": null,
+
+  "otvory": [],
+  "_otvory_poznamka": "nedá sa odčítať — na pláne NIE SÚ zakreslené žiadne okná ani dvere (room-planner bez otvorov)",
+  "pocet_oken": null,
+  "pocet_dveri": null,
+
+  "zastavena_plocha_m2": 137.6,
+  "_zastavena_vypocet": "17.10×8.90 − notch vľavo dole ~7.55×1.94 ≈ 152.2 − 14.6 ≈ 137.6 m²; NEISTÉ kvôli nekonzistentným kótam (±5 m²)",
+  "uzitna_plocha_m2": 119.4,
+  "_uzitna_zdroj": "súčet plôch v miestnostiach: 44+2.5+1.9+6.2+5.1+12.2+9.3+3.4+11+12.6+11.2 = 119.4 m²; POZOR: jedna miestnosť (vľavo od Koupelna 3.4, asi šatňa ~4 m²) je bez popisu a v súčte chýba",
+  "pocet_podlazi": 1,
+  "_podlazi_poznamka": "predpoklad bungalov — žiadne schodisko na pláne",
+  "ma_garaz": false,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Amatérsky schematický pôdorys z room-planner appky (kóty v metroch, watermark). Dispozícia 4+kk bungalov: Obyvak 44, Zadveri, 2× Koupelna, WC, Spiz, Sklad+TM, Loznice + 2 Pokoje. Použiteľné len ČIASTOČNE: obvod a plochy áno (s toleranciou), hrúbky stien a otvory sa NEDAJÚ odčítať. Najneistejšie: vzájomne nesediace kóty (15.73 vs 17.10)."
+}

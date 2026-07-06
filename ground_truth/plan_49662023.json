@@ -1,0 +1,41 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory! POZN: rovnaký dom ako plan_49661933.jpg (73,91 m²), tento výkres má čitateľnejšie vnútorné kóty.",
+  "soubor": "test_podorysy/plan_49662023.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 43.5,
+  "_obvod_vypocet": "L-tvar. Bounding box 14.10 × 7.64 m: šírka dole 45+1320+45=1410; výška vľavo 45+674+45=764 (vpravo 45+408+266+45=764 sedí). Výrez (terasa) vpravo hore ~4.15 × 4.08 m — pri jednom pravouhlom výreze obvod = 2×(14.10+7.64) = 43.48 ≈ 43.5 m. Krížová kontrola: dolný reťazec 75+180+97+12+41+100+22+10+23+100+45+12+45+105+16+12+122+180+122 = 1319 ≈ 1320 ✓",
+  "obvod_tloustka_mm": 450,
+  "_tloustka_zdroj": "kóty 45 vo všetkých rohoch",
+  "vnitrni_nosne_m": 0,
+  "_nosne_poznamka": "Všetky vnútorné steny kótované 10–14 cm = priečky, žiadna hrubšia vnútorná stena. Bungalov, pravdepodobne väzníkový krov. Overiť.",
+  "pricky_m": 26.0,
+  "_pricky_poznamka": "DRAFT odhad z dispozície: deliaca stena ľavé izby vs. obývačka/chodba ~6.7 m, medzi izbami ~3.2 m, sanitárny blok (kúpeľňa+WC, steny 10–23 cm v reťazci) ~10 m, šatník/komora pri spálni ~3.5 m, západná stena spálne ~2.7 m. PREMERAŤ z kót!",
+  "pricky_tloustka_mm": 120,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": 1.0, "pocet": 2, "_pozn": "horná fasáda: izba 1 (kóta 100) a obývačka (kóta 100)"},
+    {"typ": "okno", "sirka_m": 1.8, "pocet": 2, "_pozn": "dolná fasáda: izba 2 (kóta 180) a spálňa (kóta 180, 122 z každej strany)"},
+    {"typ": "okno", "sirka_m": 1.0, "pocet": 2, "_pozn": "dolná fasáda pri kúpeľni/WC: dve kóty 100 (medzi nimi reťazec 22|10|23)"},
+    {"typ": "dvere_vchod", "sirka_m": 1.05, "pocet": 1, "_pozn": "dolná fasáda, kóta 105"},
+    {"typ": "dvere_terasa", "sirka_m": 0.9, "pocet": 1, "_pozn": "východná stena pri výreze (terasa), kóta 90"},
+    {"typ": "dvere_vnitrni", "sirka_m": null, "pocet": 6, "_pozn": "odhad z oblúkov: 2 izby, spálňa, kúpeľňa, WC, komora — NEISTÉ, overiť"},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": 6,
+  "pocet_dveri": 8,
+
+  "zastavena_plocha_m2": 90.8,
+  "_zastavena_vypocet": "14.10×7.64 − výrez 4.15×4.08 = 107.72 − 16.93 = 90.79",
+  "uzitna_plocha_m2": 73.91,
+  "_uzitna_zdroj": "popis vo výkrese: 73,91 m²",
+  "pocet_podlazi": 1,
+  "ma_garaz": false,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Bungalov v tvare L, výrez vpravo hore (krytá terasa). Duplicita s plan_49661933.jpg — pri overovaní stačí premerať raz a preniesť. Najneistejšie: dĺžka priečok a počet vnútorných dverí."
+}

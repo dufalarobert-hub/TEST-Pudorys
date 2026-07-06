@@ -1,0 +1,41 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory! Výkres = PRÍZEMIE (parter) 2-podlažného poľského projektu ProjektStodola.pl — miestnosti 0.1–0.8; poschodie je plan_49665296.jpg (rovnaká tabuľka miestností, spolu 201.67 m²).",
+  "soubor": "test_podorysy/plan_49665297.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 62.7,
+  "_obvod_vypocet": "L-tvar prízemia: bounding box 15.85 × 15.51 m (hore 1585, zvislé reťazce 1651 mínus 100 presah = 1551). Hlavné telo hore (šírka 1585, hĺbka ~716) + garážové krídlo vľavo dole (šírka 692). Pri jednom pravouhlom výreze obvod = 2×(15.85+15.51) = 62.72 m. NEISTÉ: južná fasáda má drobné odskoky (salón vs. blok 0.1/0.3), skutočný obvod môže byť o 1–2 m dlhší; hĺbku 1551 čítam z reťazca 100|535|288|728 vľavo a 100|716|835 vpravo — kóty čiastočne zahŕňajú spevnené plochy, OVERIŤ.",
+  "obvod_tloustka_mm": 250,
+  "_tloustka_zdroj": "NEISTÉ — nie je priamo kótované; odhad z mierky (~8 px pri 3.08 cm/px ≈ 25 cm), konzistentné s poschodím. Možno murivo bez zobrazeného zateplenia. OVERIŤ.",
+  "vnitrni_nosne_m": 18.0,
+  "_nosne_poznamka": "DRAFT odhad: steny okolo schodiska (~4+4 m), stena špajza/kuchyňa (~4.6 m), pozdĺžna stena chodby 0.7 (~7 m — časť), severná stena garáže k obytnej časti (~6.9 m) — spolu ~18 m hrubších (~25 cm) stien. VEĽMI NEISTÉ, hrúbky nie sú kótované, PREMERAŤ.",
+  "pricky_m": 10.0,
+  "_pricky_poznamka": "DRAFT odhad: priečky wiatrołap/łazienka 0.3 (282.5), pom. techniczne 0.5, drobné deliace steny — spolu ~10 m. PREMERAŤ z kót.",
+  "pricky_tloustka_mm": 120,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": 2.0, "pocet": 1, "_pozn": "západný štít, spálňa 0.2, značka 200/225"},
+    {"typ": "okno", "sirka_m": 2.0, "pocet": 1, "_pozn": "severná fasáda, kuchyňa, značka 200/185"},
+    {"typ": "okno", "sirka_m": 5.0, "pocet": 1, "_pozn": "východný štít, salón — veľké zasklenie/HS portál na terasu, značka 500/225; možno rátať ako okno aj vstup na terasu"},
+    {"typ": "okno", "sirka_m": null, "pocet": 2, "_pozn": "južná stena salóna: značky vyzerajú ako 200/225 a 80/225 — ZLE ČITATEĽNÉ, overiť šírky aj počet"},
+    {"typ": "dvere_vchod", "sirka_m": 1.43, "pocet": 1, "_pozn": "západná fasáda, wiatrołap 0.1, značka 143/225 (dvere so svetlíkom?)"},
+    {"typ": "garaz_vrata", "sirka_m": 5.0, "pocet": 1, "_pozn": "dvojgaráž (dwustanowiskowy), značka 500/225, pravdepodobne južná stena; alternatívne 2 samostatné brány — z výkresu vidno jeden otvor"},
+    {"typ": "dvere_vnitrni", "sirka_m": null, "pocet": 7, "_pozn": "odhad: 0.1→0.7, 0.2, 0.3, 0.4, 0.5, dvere do garáže, posuvné v chodbe — NEISTÉ"}
+  ],
+  "pocet_oken": 5,
+  "pocet_dveri": 9,
+
+  "zastavena_plocha_m2": 168.0,
+  "_zastavena_vypocet": "bounding 15.85×15.51 = 245.8 mínus výrez ~9.0×8.6 = 77.4 → ~168 m² (vrátane garáže ~50 m² brutto). NEISTÉ kvôli odskokom južnej fasády — môže byť 160–170 m².",
+  "uzitna_plocha_m2": 201.67,
+  "_uzitna_zdroj": "tabuľka miestností: súčet 0.1–1.7 = 201.67 m² (celý dom vrátane garáže 37.55). Len prízemie 0.1–0.8 = 131.55 m².",
+  "pocet_podlazi": 2,
+  "ma_garaz": true,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Poľský projekt 'stodola', pôdorys prízemia, L-tvar s dvojgarážou. Obytná časť: spálňa, kuchyňa+jedáleň+salón 47.34 m², špajza, technická miestnosť, kúpeľňa, wiatrołap. Párovať s plan_49665296 (poschodie). Najneistejšie: hĺbka domu / južné odskoky (obvod ±2 m), hrúbky stien (nekótované) a okná južnej steny salóna."
+}

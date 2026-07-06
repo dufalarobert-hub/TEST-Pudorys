@@ -1,0 +1,32 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49675100.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": null,
+  "_obvod_vypocet": "nedá sa odčítať — výkres nie je pôdorys domu",
+  "obvod_tloustka_mm": null,
+  "_tloustka_zdroj": null,
+  "vnitrni_nosne_m": null,
+  "_nosne_poznamka": null,
+  "pricky_m": null,
+  "_pricky_poznamka": null,
+  "pricky_tloustka_mm": null,
+
+  "otvory": [],
+  "pocet_oken": null,
+  "pocet_dveri": null,
+
+  "zastavena_plocha_m2": null,
+  "uzitna_plocha_m2": null,
+  "_uzitna_zdroj": null,
+  "pocet_podlazi": null,
+  "ma_garaz": null,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "NEPOUŽIŤ: nie je pôdorys RD — je to konštrukčný DETAIL ROHU okennej rohovej zostavy (RD Hlušovice, 'PŮDORYS ROHOVÉ SESTAVY - VAR.2, DETAIL ROHU'). Kóty sú v mm profilov okna (69/49/49/82, oceľový stĺp 80×80 mm), z toho sa nedá odčítať žiadny obvod ani dispozícia domu."
+}

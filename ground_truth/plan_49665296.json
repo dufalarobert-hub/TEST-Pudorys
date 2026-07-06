@@ -1,0 +1,39 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory! POZOR: výkres zobrazuje LEN POSCHODIE (piętro) 2-podlažného poľského projektu (ProjektStodola.pl) — miestnosti 1.1–1.7; prízemie (0.1–0.8 vrátane garáže) je na inom výkrese, pravdepodobne plan_49665297.",
+  "soubor": "test_podorysy/plan_49665296.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 46.4,
+  "_obvod_vypocet": "LEN POSCHODIE: obdĺžnik 15.98 × 7.24 m (kóty 1598 hore, 724 vpravo) → 2×(15.98+7.24) = 46.44 m. Balkón/terasa vpravo (246) a strecha garáže dole (692×831, 'możliwość tarasu na garażu') NEZAPOČÍTANÉ. Obvod prízemia bude väčší (L-tvar s garážou).",
+  "obvod_tloustka_mm": 250,
+  "_tloustka_zdroj": "NEISTÉ — kóta hrúbky nie je priamo čitateľná; odvodené z rozdielu 1598 − suma vnútorných kót (303.5+220+344+175+408.5) ≈ 147 cm na 2 obvodové + 4 vnútorné steny → obvod ~25 cm. Možno murivo bez zobrazeného zateplenia. OVERIŤ.",
+  "vnitrni_nosne_m": 15.0,
+  "_nosne_poznamka": "DRAFT odhad: pozdĺžne steny chodby 1.1 (dĺžka chodby 753) po oboch stranách ~2×7.5 m, kreslené rovnako hrubo ako obvod (~24-25 cm). NEISTÉ — na poschodí môžu byť čiastočne nenosné.",
+  "pricky_m": 16.0,
+  "_pricky_poznamka": "DRAFT odhad: priečne steny medzi izbami (1.2|schodisko, 1.7|1.6, 1.3|1.4, 1.4|1.5, 1.6|1.5 ~4 m) + steny kúpeľní. Hrúbky ťažko čitateľné (výkres 1:100, tenké kóty 12?). PREMERAŤ.",
+  "pricky_tloustka_mm": 120,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": 2.0, "pocet": 1, "_pozn": "ľavý štít, spálňa 1.2, značka 200/180, h=220"},
+    {"typ": "okno", "sirka_m": 1.4, "pocet": 2, "_pozn": "pravý štít na balkón, izby 1.6 a 1.5, značky 140/180, h=220 — jeden z nich môže byť balkónové dvere (balkón inak nemá prístup), nedá sa jednoznačne odčítať"},
+    {"typ": "dvere_vchod", "sirka_m": null, "pocet": 0, "_pozn": "poschodie — vchod je na prízemí (iný výkres)"},
+    {"typ": "dvere_vnitrni", "sirka_m": null, "pocet": 7, "_pozn": "odhad: 1.2 spálňa, garderóba, 1.3, 1.4, 1.5, 1.6, 1.7 (časť posuvné, kreslené čiarkovane) — NEISTÉ"},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0, "_pozn": "garáž je na prízemí, na tomto výkrese len obrys strechy"}
+  ],
+  "pocet_oken": 3,
+  "pocet_dveri": 7,
+
+  "zastavena_plocha_m2": 115.7,
+  "_zastavena_vypocet": "LEN POSCHODIE 15.98×7.24 = 115.7 m². Zastavaná plocha domu na teréne = prízemie + garážové krídlo (obrys ~6.92×8.31 dole) — z tohto výkresu presne neurčiteľné, viď plan_49665297.",
+  "uzitna_plocha_m2": 201.67,
+  "_uzitna_zdroj": "tabuľka miestností vo výkrese: súčet 0.1–1.7 = 201.67 m² (celý dom, vrátane garáže 37.55). Len poschodie 1.1–1.7 = 70.12 m².",
+  "pocet_podlazi": 2,
+  "ma_garaz": true,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Poľský projekt 'stodola' (ProjektStodola.pl), pôdorys poschodia. Okná len na štítových stenách (horná a dolná fasáda plné). Miestnosti: komunikácia, spálňa s garderóbou a kúpeľňou, 2 izby, práčovňa, 2 kúpeľne. Najneistejšie: hrúbky stien (odvodené, nie kótované) a rozdelenie nosné vs. priečky. Pre kalkulačku hrubej stavby treba spárovať s výkresom prízemia."
+}

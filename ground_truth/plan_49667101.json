@@ -1,0 +1,27 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Súbor NIE JE pôdorys — nevhodný do meracieho etalónu.",
+  "soubor": "test_podorysy/plan_49667101.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-05), čaká na ľudské overenie",
+  "datum": "2026-07-05",
+
+  "obvod_m": null,
+  "obvod_tloustka_mm": null,
+  "vnitrni_nosne_m": null,
+  "pricky_m": null,
+  "pricky_tloustka_mm": null,
+
+  "otvory": [],
+  "pocet_oken": null,
+  "pocet_dveri": null,
+
+  "zastavena_plocha_m2": null,
+  "uzitna_plocha_m2": null,
+  "pocet_podlazi": null,
+  "ma_garaz": null,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "NEPOUŽIŤ: nie je pôdorys — textová cenová ponuka projekčnej a inžinierskej činnosti pre novostavbu RD (tabuľka: hydrogeologický posudok 5 000 Kč, geodetické zameranie 7 000 Kč, radón 4 000 Kč, PENB 5 000 Kč; D.1 výkresová dokumentácia 104 000 Kč, D.2 statika 23 000 Kč, D.3 PBŘ 4 000 Kč; PD pre stavebné povolenie celkom 152 000 Kč). Ceny sa týkajú dokumentácie, NIE hrubej stavby — nepatria do ref_cena_kc."
+}

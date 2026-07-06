@@ -1,0 +1,37 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49661930.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-05), čaká na ľudské overenie",
+  "datum": "2026-07-05",
+
+  "obvod_m": 38.96,
+  "_obvod_vypocet": "obdĺžnik 12.18 × 7.30 m (kóty 1218 × 730 cm) → 2×(12.18+7.30)",
+  "obvod_tloustka_mm": 350,
+  "_tloustka_zdroj": "kóta 35 v rohoch výkresu",
+  "vnitrni_nosne_m": 6.5,
+  "_nosne_poznamka": "DRAFT — pozdĺžna stena pri obývačke vyzerá hrubšia; overiť či je nosná (bungalov môže mať väzníky = bez nosných)",
+  "pricky_m": 20.0,
+  "_pricky_poznamka": "DRAFT — hrubý odhad z dispozície (4 izby + kúpeľňa + WC + chodba); PREMERAŤ z kót",
+  "pricky_tloustka_mm": 115,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": null, "pocet": 8, "_pozn": "spočítané zo symbolov, šírky doplniť z kót"},
+    {"typ": "dvere_vchod", "sirka_m": null, "pocet": 1},
+    {"typ": "dvere_vnitrni", "sirka_m": null, "pocet": 7},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": 8,
+  "pocet_dveri": 8,
+
+  "zastavena_plocha_m2": 88.9,
+  "uzitna_plocha_m2": 79.87,
+  "_uzitna_zdroj": "popis vo výkrese: 79,87 m²",
+  "pocet_podlazi": 1,
+  "ma_garaz": false,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Bungalov, obdĺžnikový pôdorys bez zalomení. Vodoznak KOUPELNY (výkres z inzercie)."
+}

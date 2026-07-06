@@ -1,0 +1,39 @@
+{
+  "_komentar": "DRAFT od Claude (nezávislé čítanie, iný model než Gemini). Pred verified=true SKONTROLOVAŤ ručne proti výkresu — hlavne nosné/priečky a otvory!",
+  "soubor": "test_podorysy/plan_49681696.jpg",
+  "verified": false,
+  "kdo_meril": "Claude draft (2026-07-06), čaká na ľudské overenie",
+  "datum": "2026-07-06",
+
+  "obvod_m": 55.84,
+  "_obvod_vypocet": "tvar L: bounding box 16.71 × 11.21 m (kóty 16710 hore, 11210 vpravo; ľavá strana 6960+4250=11210, dolná 7500+9210=16710). Pri L bez ďalších zalomení je obvod = obvodu bounding boxu: 2×(16.71+11.21) = 55.84 m. TERASA 18,75 m² (7.5×2.5, ľavý dolný roh) do obvodu NEZAPOČÍTANÁ",
+  "obvod_tloustka_mm": 480,
+  "_tloustka_zdroj": "NEISTÉ — odvodené z rozdielu kót: 6960 vonkajšia hĺbka − 6000 interiér obývačky = 960 mm na 2 steny → ~480 mm; rovnako 9210 − (5720+140+2390) = 960. Presná kóta hrúbky nie je čitateľná, môže byť 440–500 mm",
+  "vnitrni_nosne_m": 2.0,
+  "_nosne_poznamka": "VEĽMI NEISTÉ — takmer všetky vnútorné steny majú kóty 140 mm (priečky). Jediný kandidát na nosnú je stena s kótou 240 pri kuchyni/špajzi (~2 m). Bungalov — strecha môže byť na väzníkoch bez vnútorných nosných. Overiť ručne",
+  "pricky_m": 40.0,
+  "_pricky_poznamka": "DRAFT odhad zo súčtu dispozície (deliace steny špajza/zádverie/technická/sklad ~6 m, steny chodby ~8 m, blok šatňa+kúpeľňa ~8 m, ložnica ~7 m, chodbička 1200 ~7 m, kúpeľňa+WC vpravo ~5 m, izby ~4 m). Hrúbka 140 mm z kót. PREMERAŤ",
+  "pricky_tloustka_mm": 140,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": null, "pocet": 7, "_pozn": "NEISTÉ počítanie zo symbolov: obývačka+kuchyňa 2–3 okná (ľavá a horná stena), izby 2, kúpeľňa 1, technická/sklad 1; šírky nie sú jednoznačne okótované"},
+    {"typ": "okno_portal_terasa", "sirka_m": null, "pocet": 1, "_pozn": "veľká presklená stena/posuvný portál z obývačky na terasu (južná stena obývačky), šírka rádovo 3–5 m — z kót neviem presne"},
+    {"typ": "dvere_vchod", "sirka_m": 0.9, "pocet": 1, "_pozn": "vstup hore do zádveria, kóta 900/2150, označený trojuholníkom"},
+    {"typ": "dvere_vnitrni", "sirka_m": 0.8, "pocet": 10, "_pozn": "kóty 800/1970, 700/1970 a 900/1970 pri oblúčikoch; spočítané ~10 (zádverie, špajza, technická, sklad, WC, 2× kúpeľňa, šatňa, ložnica, 2× pokoj — možno 9–11)"},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": 8,
+  "pocet_dveri": 11,
+
+  "zastavena_plocha_m2": 155.4,
+  "_zastavena_vypocet": "L: 16.71×6.96 + 9.21×4.25 = 116.30 + 39.14 = 155.44 m² (bez terasy)",
+  "uzitna_plocha_m2": 121.35,
+  "_uzitna_zdroj": "súčet plôch v miestnostiach: 43.56+2.40+5.04+5.22+3.00+11.46+2.62+3.38+3.82+5.97+12.26+10.10+12.52 = 121.35 m² (terasa 18.75 nezapočítaná)",
+  "pocet_podlazi": 1,
+  "ma_garaz": false,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+
+  "poznamky": "Bungalov v tvare L, 4+kk (obývací pokoj s kuchyní 43,56 + ložnice + 2 pokoje), terasa v kúte L. Najneistejšie: hrúbka obvodovej steny (480 je dopočet, nie kóta), vnútorné nosné steny (možno žiadne) a presný počet/šírky okien."
+}

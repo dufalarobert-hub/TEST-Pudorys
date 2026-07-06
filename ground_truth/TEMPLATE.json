@@ -1,0 +1,33 @@
+{
+  "_komentar": "Šablóna ground truth pre 1 pôdorys. Hodnoty RUČNE ZMERANÉ z výkresu (PDF measure / kóty). AI draft je len návrh — 'verified' nastav na true až po ľudskej kontrole!",
+  "soubor": "test_podorysy/plan_XXXXXXXX.jpg",
+  "verified": false,
+  "kdo_meril": "",
+  "datum": "2026-07-05",
+
+  "obvod_m": null,
+  "obvod_tloustka_mm": null,
+  "vnitrni_nosne_m": null,
+  "pricky_m": null,
+  "pricky_tloustka_mm": null,
+
+  "otvory": [
+    {"typ": "okno", "sirka_m": null, "pocet": 1},
+    {"typ": "dvere_vchod", "sirka_m": null, "pocet": 1},
+    {"typ": "dvere_vnitrni", "sirka_m": null, "pocet": 1},
+    {"typ": "garaz_vrata", "sirka_m": null, "pocet": 0}
+  ],
+  "pocet_oken": null,
+  "pocet_dveri": null,
+
+  "zastavena_plocha_m2": null,
+  "uzitna_plocha_m2": null,
+  "pocet_podlazi": null,
+  "ma_garaz": null,
+
+  "ref_cena_kc": null,
+  "ref_cena_typ": null,
+  "_ref_cena_typ_hodnoty": "material = ponuka stavebnín/výrobcu | komplet = materiál+práca (firma/vlastný referenčný rozpočet)",
+
+  "poznamky": ""
+}
