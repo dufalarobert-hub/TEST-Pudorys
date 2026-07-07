@@ -353,10 +353,25 @@ def _parse_json(text: str) -> dict:
     # odstráň prípadné ```json ... ``` obaly
     text = re.sub(r"^```(json)?", "", text).strip()
     text = re.sub(r"```$", "", text).strip()
+    # 1) čistý JSON (JSON-mode / tool-use)
+    try:
+        return json.loads(text)
+    except ValueError:
+        pass
+    # 2) prvý VALIDNÝ objekt od prvej '{' — raw_decode ignoruje smeti ZA ním.
+    #    Na ne-pôdorysoch (foto, detaily) model občas vráti dva objekty alebo
+    #    trailing text → greedy regex z toho robil nevalidný blob (gate test 2026-07-07).
+    i = text.find("{")
+    if i >= 0:
+        try:
+            obj, _end = json.JSONDecoder().raw_decode(text[i:])
+            if isinstance(obj, dict):
+                return obj
+        except ValueError:
+            pass
+    # 3) posledná šanca: greedy regex (pôvodné správanie)
     m = re.search(r"\{.*\}", text, re.DOTALL)
-    if m:
-        text = m.group(0)
-    return json.loads(text)
+    return json.loads(m.group(0) if m else text)
 
 
 def extract_from_plan(path: str) -> dict:
@@ -415,7 +430,21 @@ def _extract_once(images, page_idx, n_pages) -> dict:
     # schema vynúti štruktúrovaný výstup (Fable tool-use / Gemini JSON-mode)
     text, usage, model = providers.get_provider().generate(
         images, EXTRACTION_PROMPT, schema=EXTRACTION_SCHEMA)
-    data = _parse_json(text)
+    try:
+        data = _parse_json(text)
+    except ValueError:
+        # Model vrátil nevalidný JSON — deje sa na NE-pôdorysoch (fotky, detaily),
+        # kde sa model zmätie. 1 retry (stochastické), potom "nečitateľné" →
+        # quality_gate to korektne ODMIETNE namiesto 500-ky userovi (gate test 2026-07-07).
+        try:
+            text, usage2, model = providers.get_provider().generate(
+                images, EXTRACTION_PROMPT, schema=EXTRACTION_SCHEMA)
+            usage = {"in": usage["in"] + usage2["in"], "out": usage["out"] + usage2["out"]}
+            data = _parse_json(text)
+        except ValueError:
+            data = {"typ_stavby": "rodinny_dum", "obvod_m": 0, "confidence_0_100": 5,
+                    "meritko_source": "žádné",
+                    "note": "Model nevrátil čitatelný výstup — vstup pravděpodobně není půdorys."}
     data["_model"] = model
     data["_pages"] = len(images)
     data["_page_idx"] = page_idx
