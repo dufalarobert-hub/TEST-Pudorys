@@ -112,6 +112,19 @@ def _analyze_multifloor(files):
 
     agg = _aggregate_floors(floors)
     result = pricing.calculate(agg)
+    # DUPLIKÁT: 2× ten istý pôdorys (≈zhodný obvod aj plocha) = cena ~2× nadhodnotená
+    for i in range(len(floors)):
+        for j in range(i + 1, len(floors)):
+            oi, oj = float(floors[i].get("obvod_m") or 0), float(floors[j].get("obvod_m") or 0)
+            ui, uj = (float(floors[i].get("uzitna_plocha_m2") or 0),
+                      float(floors[j].get("uzitna_plocha_m2") or 0))
+            if oi and oj and abs(oi - oj) / max(oi, oj) < 0.03 \
+                    and ui and uj and abs(ui - uj) / max(ui, uj) < 0.03:
+                result["warnings"].insert(0, (
+                    f"⚠ {floors[i]['_floor_label']} a {floors[j]['_floor_label']} vypadají jako "
+                    f"STEJNÝ půdorys (obvod ~{oi:.0f} m, plocha ~{ui:.0f} m²). Pokud jste stejné "
+                    "podlaží nahráli dvakrát, cena je ~2× nadhodnocená — nahrajte každé podlaží "
+                    "jen jednou."))
     kom = komentar.compose(result, agg)
     # INTEGRACE (cihlomat): lead-capture rovnako ako pri single (result + _from_project).
     return jsonify({
@@ -164,6 +177,30 @@ def api_analyze():
 
     params = dict(extraction)
 
+    # === PD DEEP-MINING: klasifikácia našla v dokumentácii aj pôdorys 2.NP → zmeraj ho
+    # zvlášť a SČÍTAJ reálnu geometriu (namiesto "horné podlažie = kópia prízemia").
+    floors_info = None
+    extra_idx = extraction.get("_extra_floor_page_idx")
+    if extra_idx is not None:
+        try:
+            ex2 = extract.extract_page(str(save_path), extra_idx)
+            dec2, _ = reconcile.quality_gate(ex2)
+            if dec2 != "REFUSE" and float(ex2.get("obvod_m") or 0) > 0:
+                extraction["_floor_label"] = "1.NP"
+                ex2["_floor_label"] = "2.NP"
+                agg = _aggregate_floors([extraction, ex2])
+                agg["_from_project"] = True
+                agg["_page_idx"] = extraction.get("_page_idx")
+                agg["_pages_total"] = extraction.get("_pages_total")
+                params = dict(agg)
+                floors_info = [{"label": fl["_floor_label"], "obvod_m": fl.get("obvod_m"),
+                                "pricky_m": fl.get("pricky_m"),
+                                "uzitna_plocha_m2": fl.get("uzitna_plocha_m2"),
+                                "confidence_0_100": fl.get("confidence_0_100")}
+                               for fl in (extraction, ex2)]
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()   # 2.NP sa nepodarilo — pokračuj s 1.NP (graceful)
+
     # === Claude TEXT vrstva: len keď treba (Gemini nedal otvory / nízka conf) — šetrí čas+náklad.
     # Tichý pomocník: dopĺňa chýbajúce otvory; jeho výstup sa userovi NEzobrazuje (technický).
     need_claude = (not params.get("pocet_oken") or not params.get("pocet_dveri")
@@ -213,6 +250,8 @@ def api_analyze():
         "gate": decision,
         "gate_msg": gate_msg,
         "extraction": extraction,
+        "multifloor": bool(floors_info),
+        "floors": floors_info,
         "vision": vision,
         "reconcile": merged,
         "claude": claude,

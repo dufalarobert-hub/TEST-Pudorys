@@ -402,6 +402,10 @@ def calculate(params: dict) -> dict:
         warnings.append("Dům má garáž / vedlejší prostor. Ověřte, že její obvodové i vnitřní "
                         "stěny JSOU zahrnuté v délkách — bývají hlavním zdrojem podcenění zdiva. "
                         "V případě potřeby dorovnejte délky stěn níže.")
+    if params.get("_obvod_bbox_fix"):
+        warnings.append("Součet stran obvodu vyšel MENŠÍ než 2×(šířka+délka) domu z hlavních kót — "
+                        "AI zřejmě přehlédla zalomení (L/U tvar). Obvod jsme dorovnali na obvod "
+                        "celkových rozměrů domu; ověřte délku obvodu níže.")
     if obvod_adjusted:
         warnings.append(f"Obvod přečtený z výkresu byl POD geometrickým minimem pro tuto zastavěnou "
                         f"plochu (AI pravděpodobně přehlédla část obrysu — garáž, zalomení). "

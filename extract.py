@@ -66,6 +66,9 @@ POSTUP:
    (plný šrafovaný/tlustý pás), NE po hraně terasy/zpevněné plochy. (Toto je častá chyba —
    terasa nafoukne obvod a zdvojnásobí cenu.)
    (Příklad: obdélník 11000 x 13500 mm => 2*(11+13.5) = 49 m; L-tvar = součet stran po obvodu.)
+   Vyplň i "rozmery_celkove_m" — CELKOVOU šířku a délku domu z HLAVNÍCH (nejdelších)
+   kót obvodu (bez terasy). To je tvrdá kontrola: obvod pravoúhlého domu NEMŮŽE být
+   menší než 2×(šířka+délka).
    KONTROLA SAMA SEBE: reálné domy mají obvod typicky 4,2-5,5 * odmocnina(zastavěná plocha).
    Když ti vyjde MÉNĚ než 4*√plocha → přehlédl jsi část obvodu. Když VÍCE než ~6*√plocha →
    nejspíš jsi do obvodu zahrnul terasu/zpevněnou plochu — veď obrys jen po stěnách domu.
@@ -145,6 +148,7 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "typ_stavby": "rodinny_dum" | "byt" | "bytovy_dum" | "jine"   (konzervativně: nejsi-li si jistý, "rodinny_dum"),
   "konstrukce": "zdene" | "drevostavba" | "skelet" | null        (nejsi-li si jistý → null = bereme jako zděné),
   "obvod_m": <číslo>,
+  "rozmery_celkove_m": {"sirka_m": <celková šířka domu z hlavní kóty>, "dlzka_m": <celková délka>} nebo null,
   "obvod_tloustka_mm": <číslo>,
   "tloustka_z_koty": <true/false — je tloušťka NOSNÉ TVÁRNICE dána výslovně (kóta tloušťky NEBO typ tvárnice v legendě, např. "Ytong 300")? true jen pokud to vidíš; jinak false (vizuální odhad)>,
   "ma_zateplenie": <true/false — je u obvodové stěny uvedena samostatná vrstva tepelné izolace / zateplení?>,
@@ -184,7 +188,10 @@ EXTRACTION_SCHEMA = {
     "properties": {
         "typ_stavby": {"type": "string", "enum": ["rodinny_dum", "byt", "bytovy_dum", "jine"]},
         "konstrukce": {"type": ["string", "null"], "enum": ["zdene", "drevostavba", "skelet", None]},
-        "obvod_m": _NUM, "obvod_tloustka_mm": _NUM,
+        "obvod_m": _NUM,
+        "rozmery_celkove_m": {"type": ["object", "null"], "properties": {
+            "sirka_m": {"type": "number"}, "dlzka_m": {"type": "number"}}},
+        "obvod_tloustka_mm": _NUM,
         "tloustka_z_koty": _BOOL, "ma_zateplenie": _BOOL,
         "obvod_material": {"type": ["string", "null"]},
         "obvod_material_trieda": {"type": ["string", "null"], "enum": ["lacne", "stredne", "drahe", None]},
@@ -216,14 +223,20 @@ EXTRACTION_SCHEMA = {
 }
 
 
-def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None):
+def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None, pages=None):
     """PDF -> zoznam PNG bytes; obrázok -> [bytes].
-    only_page = vyrenderuj LEN tú jednu stranu (na pôdorys vybraný z projektu)."""
+    only_page = vyrenderuj LEN tú jednu stranu; pages = konkrétny zoznam strán
+    (PD deep-mining: pôdorys + rez + výpis otvorov)."""
     p = str(path).lower()
     imgs = []
     if p.endswith(".pdf"):
         doc = fitz.open(path)
-        idxs = [only_page] if only_page is not None else range(min(doc.page_count, MAX_SCAN_PAGES))
+        if pages is not None:
+            idxs = pages
+        elif only_page is not None:
+            idxs = [only_page]
+        else:
+            idxs = range(min(doc.page_count, MAX_SCAN_PAGES))
         for i in idxs:
             pix = doc[i].get_pixmap(matrix=fitz.Matrix(RENDER_ZOOM, RENDER_ZOOM))
             imgs.append(Image.open(io.BytesIO(pix.tobytes("png"))))
@@ -242,13 +255,19 @@ def _pages_to_images(path: str, max_side: int = MAX_SIDE_PX, only_page=None):
     return out
 
 
-PLAN_PICK_PROMPT = """Dostáváš stránky stavební dokumentace rodinného domu — obrázky jsou
+CLASSIFY_PROMPT = """Dostáváš stránky stavební dokumentace rodinného domu — obrázky jsou
 V POŘADÍ a číslují se od nuly (první obrázek = stránka 0, druhý = 1, …).
-Najdi stránku, která je PŮDORYS PŘÍZEMÍ (1.NP) — okótovaný plán půdorysu s místnostmi a kótami.
-NENÍ to: řez, pohled (fasáda), situace, výkres krovu/základů/stropů, ani textová zpráva/tabulka.
-Když je víc půdorysů různých podlaží, vyber PŘÍZEMÍ (1.NP).
-Vrať POUZE JSON: {"plan_page": <index stránky s půdorysem>, "found": true/false}.
-Když mezi stránkami žádný půdorys není, dej found=false a plan_page=0."""
+Urči, které stránky obsahují (indexy podle pořadí obrázků):
+- "podorys_1np": okótovaný PŮDORYS PŘÍZEMÍ (1.NP) — plán s místnostmi a kótami
+- "podorys_2np": okótovaný půdorys DALŠÍHO nadzemního podlaží (2.NP / patro / obytné
+  podkroví). Sklep/suterén NE.
+- "rez": svislý ŘEZ domem (výškové kóty, označení A-A' apod.)
+- "vypis_otvorov": TABULKA / výpis oken a dveří (značky O1, O2, D1… s rozměry a počty)
+PŮDORYS NENÍ: pohled (fasáda), situace, výkres krovu/základů/stropů, textová zpráva.
+Vrať POUZE JSON:
+{"podorys_1np": <idx nebo null>, "podorys_2np": <idx nebo null>, "rez": <idx nebo null>,
+ "vypis_otvorov": <idx nebo null>, "found": true/false}
+found=false jen když mezi stránkami žádný půdorys není."""
 
 
 MAX_DOC_PAGES = 150         # tvrdý strop (extrémne PDF neprocesujeme celé)
@@ -279,18 +298,22 @@ def _drawing_candidate_idxs(doc):
     return list(range(min(n, MAX_PLAN_CANDIDATES)))     # fallback: prvých N strán
 
 
-def _pick_plan_page(path: str):
-    """Viacstránkové PDF/projekt -> index strany s pôdorysom 1.NP.
-    Veľký projekt: lacný lokálny predfilter na výkresové strany → Gemini vyberie pôdorys.
-    Vráti (idx, pocet_stran). Pre obrázok / 1-stranové PDF vráti (0, 1)."""
+_NO_CLS = {"podorys_1np": 0, "podorys_2np": None, "rez": None, "vypis_otvorov": None}
+
+
+def _classify_pages(path: str) -> dict:
+    """Viacstránkové PDF/projekt -> klasifikácia strán (PD deep-mining):
+    {podorys_1np, podorys_2np, rez, vypis_otvorov, n_pages}. Lacný lokálny predfilter
+    na výkresové strany → lacný model označí, ČO ktorá strana je. Namiesto zahodenia
+    celého projektu tak vyťažíme rez (výšky), výpis otvorov (presné okná) aj 2.NP."""
     p = str(path).lower()
     if not p.endswith(".pdf"):
-        return 0, 1
+        return {**_NO_CLS, "n_pages": 1}
     doc = fitz.open(path)
     n = doc.page_count
     if n <= 1:
         doc.close()
-        return 0, n
+        return {**_NO_CLS, "n_pages": n}
     # malé projekty: vezmi všetky strany; veľké: len výkresových kandidátov
     cand = list(range(min(n, MAX_SCAN_PAGES))) if n <= MAX_PLAN_CANDIDATES else _drawing_candidate_idxs(doc)
     imgs = []
@@ -305,15 +328,24 @@ def _pick_plan_page(path: str):
         imgs.append(buf.getvalue())
     doc.close()
     try:
-        # výber strany = lacný model (cheap=True); provider si model zvolí sám
-        text, _usage, _model = providers.get_provider().generate(imgs, PLAN_PICK_PROMPT, cheap=True)
+        # klasifikácia strán = lacný model (cheap=True); provider si model zvolí sám
+        text, _usage, _model = providers.get_provider().generate(imgs, CLASSIFY_PROMPT, cheap=True)
         d = _parse_json(text)
-        pos = int(_num(d.get("plan_page"), 0) or 0)
-        if not d.get("found") or pos < 0 or pos >= len(cand):
-            pos = 0
-        return cand[pos], n           # mapuj pozíciu v zozname kandidátov na skutočnú stranu
+
+        def _map(key):
+            v = _num(d.get(key))
+            if v is None:
+                return None
+            v = int(v)
+            return cand[v] if 0 <= v < len(cand) else None   # pozícia → skutočná strana
+
+        p1 = _map("podorys_1np")
+        if not d.get("found") or p1 is None:
+            p1 = cand[0] if cand else 0
+        return {"podorys_1np": p1, "podorys_2np": _map("podorys_2np"),
+                "rez": _map("rez"), "vypis_otvorov": _map("vypis_otvorov"), "n_pages": n}
     except Exception:
-        return (cand[0] if cand else 0), n
+        return {**_NO_CLS, "podorys_1np": cand[0] if cand else 0, "n_pages": n}
 
 
 def _parse_json(text: str) -> dict:
@@ -330,22 +362,45 @@ def _parse_json(text: str) -> dict:
 def extract_from_plan(path: str) -> dict:
     """Hlavná funkcia: cesta k súboru -> extrahované parametre (dict).
     Pri viacstránkovom projekte najprv vyberie stránku s pôdorysom, potom z nej extrahuje."""
-    page_idx, n_pages = _pick_plan_page(path)          # medzikrok pre projektovú dokumentáciu
-    only = page_idx if (str(path).lower().endswith(".pdf") and n_pages > 1) else None
-    images = _pages_to_images(path, only_page=only)
+    cls = _classify_pages(path)                        # medzikrok pre projektovú dokumentáciu
+    n_pages, page_idx = cls["n_pages"], cls["podorys_1np"]
+    is_project = str(path).lower().endswith(".pdf") and n_pages > 1
+    if is_project:
+        # PD DEEP-MINING: k pôdorysu prilož aj REZ (výška podlažia) a VÝPIS OTVOROV
+        # (presné šírky okien/dverí) — extrakčný prompt ich už vie využiť (body 6, 8).
+        pages = [page_idx] + [i for i in (cls["rez"], cls["vypis_otvorov"])
+                              if i is not None and i != page_idx]
+        images = _pages_to_images(path, pages=pages)
+    else:
+        images = _pages_to_images(path)
 
     # SELF-CONSISTENCY: N nezávislých čítaní PARALELNE → medián numerických polí.
     # AI čítanie varíruje ~7 % medzi behmi; medián z 3 to zráža pod ~3 % (PLAN_PRESNOST B3).
     # Default 1 (šetrí API); produkcia: EXTRACT_RUNS=3. Paralelne kvôli Vercel 60 s.
     runs = max(1, int(os.environ.get("EXTRACT_RUNS", "1")))
     if runs == 1:
-        return _extract_once(images, page_idx, n_pages)
-    with ThreadPoolExecutor(max_workers=runs) as ex:
-        results = [r for r in ex.map(lambda _: _try_extract(images, page_idx, n_pages),
-                                     range(runs)) if r]
-    if not results:
-        raise RuntimeError("Extrakcia zlyhala vo všetkých behoch.")
-    return results[0] if len(results) == 1 else _median_merge(results)
+        out = _extract_once(images, page_idx, n_pages)
+    else:
+        with ThreadPoolExecutor(max_workers=runs) as ex:
+            results = [r for r in ex.map(lambda _: _try_extract(images, page_idx, n_pages),
+                                         range(runs)) if r]
+        if not results:
+            raise RuntimeError("Extrakcia zlyhala vo všetkých behoch.")
+        out = results[0] if len(results) == 1 else _median_merge(results)
+    # PD: prezraď app-ke, či klasifikácia našla aj pôdorys 2.NP (zmeria sa zvlášť a sčíta)
+    out["_extra_floor_page_idx"] = cls["podorys_2np"] if is_project else None
+    out["_pages_used"] = ({k: cls[k] for k in ("podorys_1np", "rez", "vypis_otvorov")}
+                          if is_project else None)
+    return out
+
+
+def extract_page(path: str, page_idx: int) -> dict:
+    """Extrahuj KONKRÉTNU stranu PDF (napr. pôdorys 2.NP nájdený klasifikáciou)."""
+    doc = fitz.open(path)
+    n = doc.page_count
+    doc.close()
+    images = _pages_to_images(path, only_page=page_idx)
+    return _extract_once(images, page_idx, n)
 
 
 def _try_extract(images, page_idx, n_pages):
@@ -426,13 +481,27 @@ def _normalize(d: dict) -> dict:
                 and s and 0.3 <= s <= 6.0:
             otvory.append({"typ": typ, "sirka_m": round(s, 2),
                            "pocet": max(1, int(_num(o.get("pocet"), 1) or 1))})
+    # BBOX CHECK (deterministický, bez AI): obvod pravouhlého polygónu NEMÔŽE byť menší
+    # než perimeter bounding boxu 2×(šírka+dĺžka). Chytá podčítané L/U tvary — hlavný
+    # zdroj chýb obvodu v baseline (−16 až −24 %). L-tvar má obvod PRESNE = bbox perimeter.
+    bbox = d.get("rozmery_celkove_m") or {}
+    bb_w, bb_l = _num(bbox.get("sirka_m")), _num(bbox.get("dlzka_m"))
+    obvod = _num(d.get("obvod_m"), 0) or 0
+    obvod_bbox_fix = False
+    if bb_w and bb_l and 3 <= bb_w <= 60 and 3 <= bb_l <= 60:
+        bbox_perim = 2 * (bb_w + bb_l)
+        if obvod and obvod < bbox_perim * 0.98:
+            obvod = round(bbox_perim, 1)
+            obvod_bbox_fix = True
     return {
         # konzervatívne defaulty: keď model netrafí enum, beriem ako murovaný RD (nech neodmietneme reálny dom)
         "typ_stavby": (d.get("typ_stavby") if d.get("typ_stavby") in
                        ("rodinny_dum", "byt", "bytovy_dum", "jine") else "rodinny_dum"),
         "konstrukce": (d.get("konstrukce") if d.get("konstrukce") in
                        ("zdene", "drevostavba", "skelet") else None),
-        "obvod_m": _num(d.get("obvod_m"), 0) or 0,
+        "obvod_m": obvod,
+        "rozmery_celkove_m": ({"sirka_m": bb_w, "dlzka_m": bb_l} if bb_w and bb_l else None),
+        "_obvod_bbox_fix": obvod_bbox_fix,
         "obvod_tloustka_mm": int(_num(d.get("obvod_tloustka_mm"), 300) or 300),
         "tloustka_z_koty": bool(d.get("tloustka_z_koty")),
         "ma_zateplenie": bool(d.get("ma_zateplenie")),
