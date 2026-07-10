@@ -56,9 +56,12 @@ def _aggregate_floors(floors):
     s pocet_podlazi=1 + _floors_summed=n (žiadne hádanie horného poschodia)."""
     n = len(floors)
     base = max(floors, key=lambda fl: int(fl.get("confidence_0_100") or 0))  # materiál/trieda z najistejšieho
-    rooms = []
+    rooms, otvory = [], []
     for fl in floors:
         rooms += list(fl.get("plochy_mistnosti_m2") or [])
+        # itemizované otvory KAŽDÉHO podlažia (predtým sa brali len z base podlažia →
+        # okná ostatných podlaží sa neodpočítavali; test Fable 2026-07-07)
+        otvory += list(fl.get("otvory") or [])
 
     def s(k):
         return sum(float(fl.get(k) or 0) for fl in floors)
@@ -73,6 +76,7 @@ def _aggregate_floors(floors):
         "uzitna_plocha_m2": round(s("uzitna_plocha_m2"), 1) or None,
         "zastavena_plocha_m2": None,        # cross-check ide z úžitnej (súčet podlaží); footprint by mátol
         "plochy_mistnosti_m2": rooms,
+        "otvory": otvory,
         "pocet_podlazi": 1,                 # už SÚČET reálnych podlaží → nenásobiť
         "_floors_summed": n,
         "confidence_0_100": min(int(fl.get("confidence_0_100") or 0) for fl in floors),  # najslabší článok
@@ -80,6 +84,12 @@ def _aggregate_floors(floors):
         "ma_garaz": any(fl.get("ma_garaz") for fl in floors),
         "ma_schodiste": False,
     })
+    # vráta: any=true; všetko None (staré extrakcie) → None = pricing fallback na ma_garaz
+    vrata = [fl.get("ma_garazova_vrata") for fl in floors]
+    agg["ma_garazova_vrata"] = (any(v for v in vrata)
+                                if any(v is not None for v in vrata) else None)
+    if any(fl.get("pricky_material") == "sdk" for fl in floors):
+        agg["pricky_material"] = "sdk"      # SDK na ktoromkoľvek podlaží → nemurované priečky
     return agg
 
 

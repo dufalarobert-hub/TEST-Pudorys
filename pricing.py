@@ -112,13 +112,19 @@ def calculate(params: dict) -> dict:
     # zateplenia" → trigger MUSÍ pokryť oba prípady (zatepl OR hrubá), inak prepínač raz je, raz nie.
     _from_legend = (params.get("zdivo_zdroj") == "legenda")
     _thick = bool(obvod_t) and float(obvod_t) > 375
+    # celková hrúbka steny z kóty (ak ju extraktor prečítal) → presnejšia varianta "plné murivo"
+    # (450 mm stena = blok 440 + omietka, NIE blok 300 + 200 izolácie; test Fable 2026-07-07 dom 3)
+    stena_celk = params.get("stena_celkova_mm")
+    stena_celk = float(stena_celk) if stena_celk and float(stena_celk) > 250 else None
     if (zatepl or _thick) and not _from_legend:
         assumed_skladba = True
         if _thick:
-            blok_mm, plna_mm = 300.0, float(obvod_t)       # Gemini dal celú (hrubú) stenu, napr. 500
+            blok_mm = 300.0                                 # Gemini dal celú (hrubú) stenu, napr. 500
+            plna_mm = stena_celk if stena_celk and stena_celk >= float(obvod_t) else float(obvod_t)
         else:
             blok_mm = float(obvod_t or 300)                # Gemini dal nosný blok (~300) + flag zateplenia
-            plna_mm = blok_mm + 200                         # + typická izolácia ~200 → plná stena ~500
+            plna_mm = (stena_celk if stena_celk and stena_celk > blok_mm
+                       else blok_mm + 200)                  # + typická izolácia ~200 → plná stena ~500
         obvod_t_raw = plna_mm                               # "stěna ~X mm" = plná hrúbka vč. izolácie
         if skladba_volba == "plne":
             obvod_t, zatepl = plna_mm, False                # PLNÉ murivo: celá hrúbka = tehla
@@ -138,6 +144,16 @@ def calculate(params: dict) -> dict:
 
     obvod_m = float(params.get("obvod_m") or 0)
     pricky_m = float(params.get("pricky_m") or 0)
+    # SDK priečky NIE sú zdivo (iný materiál aj remeslo) → z ceny muriva vypadnú úplne
+    pricky_sdk = (params.get("pricky_material") == "sdk")
+    if pricky_sdk:
+        pricky_m = 0.0
+    # garážové VRÁTA ≠ garáž: odpočet vrát a preklad brány len keď sú vráta reálne na
+    # výkrese; technická miestnosť / kolna s bežnými dverami ich nemá. None (staré
+    # extrakcie bez poľa) → spätná kompatibilita = správaj sa ako doteraz (ma_garaz).
+    ma_vrata = params.get("ma_garazova_vrata")
+    if ma_vrata is None:
+        ma_vrata = bool(params.get("ma_garaz"))
     vyska = float(params.get("vyska_podlazi_m") or _CFG["vyska_podlazia_m"])
     # MUROVACIA VÝŠKA (ÚRS 801-1, viď ZNALOSTI_ROZPOCTAR.md §1–2): murivo sa počíta NETTO —
     # objem venca sa z muriva ODPOČÍTAVA (veniec je samostatná položka). Predtým sa murovalo
@@ -200,14 +216,16 @@ def calculate(params: dict) -> dict:
     vnut_it = [o for o in otvory if o["typ"] == "dvere_vnitrni"]
 
     def _plocha_otvorov(items):
-        return sum(float(o["sirka_m"]) * OPENING_H[o["typ"]] * int(o.get("pocet") or 1)
-                   for o in items)
+        # výška otvoru: z kóty/výpisu ak ju extraktor prečítal (napr. "2600 (0)" = 2,6 m),
+        # inak typická výška typu — paušál 1,5 m podceňoval celopresklené domy o ~30 %
+        return sum(float(o["sirka_m"]) * float(o.get("vyska_m") or OPENING_H[o["typ"]])
+                   * int(o.get("pocet") or 1) for o in items)
 
     # okná sa opakujú na KAŽDOM podlaží (čítame ich z 1.NP), vchodové dvere len raz (prízemie)
     okna_ded = _plocha_otvorov(okno_it) if okno_it else okna * WINDOW_M2
     vchod_ded = _plocha_otvorov(vchod_it) if vchod_it else ENTRANCE_DOOR_M2
     obvod_openings = okna_ded * podlazi + vchod_ded
-    if params.get("ma_garaz"):
+    if ma_vrata:
         obvod_openings += GARAGE_DOOR_M2   # vráta len raz (prízemie); preklad rieši položka nižšie
     obvod_net = max(obvod_gross - obvod_openings, 0)
     obvod_price = round(tier["kc_m3"] * obvod_th / 1000)        # Kč/m² steny pri tejto hrúbke
@@ -246,7 +264,8 @@ def calculate(params: dict) -> dict:
     pricky_geom = None
     pricky_zdroj = "odhad AI (vizuál)"
     pricky_unc_eff = PRICKY_INHERENT_UNC
-    rooms_ok = len(rooms) >= 4 and obvod_m > 0 and (not zast or sum(rooms) >= 0.55 * float(zast))
+    rooms_ok = (len(rooms) >= 4 and obvod_m > 0 and not pricky_sdk
+                and (not zast or sum(rooms) >= 0.55 * float(zast)))
     if rooms_ok:
         room_perim = ROOM_PERIM_K * sum(math.sqrt(a) for a in rooms)
         internal_total = max(0.0, (room_perim - obvod_m) / 2)
@@ -272,9 +291,14 @@ def calculate(params: dict) -> dict:
     pricky_price = round(pt["kc_m3"] * pricky_th / 1000)
     pricky_mat = round(pricky_net * pricky_price)
     pricky_th_note = f"{int(pricky_th)} mm" if pricky_th_read else f"~{int(pricky_th)} mm (odhad)"
-    items.append(_item("Vnútorné priečky",
-                       f"{pricky_net:.0f} m² · tl. {pricky_th_note} (−{pricky_openings:.0f} m² dvere)",
-                       round(pricky_net), "m²", pricky_price, pricky_mat))
+    if pricky_sdk:
+        items.append(_item("Vnútorné priečky — SDK (nejsou zdivo)",
+                           "sádrokartonové příčky dle výkresu — nejsou v ceně zdiva",
+                           0, "m²", 0, 0))
+    else:
+        items.append(_item("Vnútorné priečky",
+                           f"{pricky_net:.0f} m² · tl. {pricky_th_note} (−{pricky_openings:.0f} m² dvere)",
+                           round(pricky_net), "m²", pricky_price, pricky_mat))
 
     # ===== MALTA / LEPIDLO (zdicí + zakládací) — kupuje sa zvlášť k tvárniciam (~6 %) =====
     malta_pct = _CFG.get("malta_lepidlo_pct", 0)
@@ -290,7 +314,8 @@ def calculate(params: dict) -> dict:
     # PRIEČKOVÝ (vnútorné dvere) = lacný plochý/NEP. Bez tohto rozlíšenia sa dverami bohaté
     # / viacpodlažné domy predražovali (každý vnútorný otvor za 2200 namiesto ~700).
     nosne_otvory = okna * podlazi + 1                     # okná na každom podlaží + 1 vchod (raz)
-    pricky_otvory = max(0, dvere - 1) * podlazi           # vnútorné dvere (bez vchodu) na podlaží
+    # dvere v SDK priečkach nemajú murovaný preklad (rieši SDK konštrukcia)
+    pricky_otvory = 0 if pricky_sdk else max(0, dvere - 1) * podlazi
     preklad_nosny = _CFG["preklad_kc_otvor"]
     preklad_pricka = _CFG.get("preklad_pricka_kc_otvor", 700)
     if okno_it:
@@ -310,7 +335,7 @@ def calculate(params: dict) -> dict:
     # GARÁŽOVÁ BRÁNA = veľký rozpon (~2,5–5 m), KP7 nestačí (končí na 3,5 m dĺžky) →
     # KP XL / ŽB, rádovo drahší než bežný okenný preklad (viď ZNALOSTI_ROZPOCTAR.md §4).
     # Len raz (prízemie) — garáž sa na poschodí neopakuje.
-    if params.get("ma_garaz"):
+    if ma_vrata:
         garaz_kc = _CFG.get("preklad_garaz_kc", 18000)
         items.append(_item("Preklad garážové brány ⚠odhad",
                            "velký rozpon ~2,5–5 m (KP XL / ŽB), jen přízemí",
@@ -402,6 +427,13 @@ def calculate(params: dict) -> dict:
         warnings.append("Dům má garáž / vedlejší prostor. Ověřte, že její obvodové i vnitřní "
                         "stěny JSOU zahrnuté v délkách — bývají hlavním zdrojem podcenění zdiva. "
                         "V případě potřeby dorovnejte délky stěn níže.")
+    if params.get("ma_garaz") and params.get("ma_garazova_vrata") is False:
+        warnings.append("Vedlejší prostor (technická místnost / kolna) nemá garážová vrata — "
+                        "překlad brány ani odpočet vrat se nepočítá. Pokud vrata ve skutečnosti "
+                        "jsou, zapněte je níže.")
+    if pricky_sdk:
+        warnings.append("Příčky jsou dle výkresu SÁDROKARTONOVÉ — nejsou součástí ceny zdiva "
+                        "(dodávka suché výstavby). Pokud mají být zděné, změňte materiál příček níže.")
     if params.get("_obvod_bbox_fix"):
         warnings.append("Součet stran obvodu vyšel MENŠÍ než 2×(šířka+délka) domu z hlavních kót — "
                         "AI zřejmě přehlédla zalomení (L/U tvar). Obvod jsme dorovnali na obvod "
@@ -548,6 +580,9 @@ def calculate(params: dict) -> dict:
             "obvod_material_trieda": legend_tier, "obvod_material": params.get("obvod_material"),
             "zdivo_zdroj": params.get("zdivo_zdroj"),
             "uzitna_plocha_m2": uzit, "zastavena_plocha_m2": zast,
+            "ma_garaz": bool(params.get("ma_garaz")), "ma_garazova_vrata": params.get("ma_garazova_vrata"),
+            "pricky_material": params.get("pricky_material"),
+            "stena_celkova_mm": int(stena_celk) if stena_celk else None,
             "plochy_mistnosti_m2": rooms, "_floors_summed": floors_summed,
             "otvory": otvory, "_ensemble_spread": spread,
             "model_uncertainty": model_unc,

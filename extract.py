@@ -77,6 +77,10 @@ POSTUP:
       tlustě jako obvod. Součet jejich délek do "vnitrni_nosne_m" + tloušťka.
    b) PŘÍČKY — tenké dělící stěny (~75-150 mm). Součet délek do "pricky_m" + tloušťka.
    Když to nerozlišíš spolehlivě, dej vše do pricky_m a vnitrni_nosne_m = 0.
+   MATERIÁL PŘÍČEK: příčky nemusí být zděné! Sádrokartonové (SDK) příčky poznáš podle
+   TENKÉ NEŠRAFOVANÉ stěny (dvojitá čára bez výplně/šrafy, zatímco zděné stěny šrafované
+   jsou), popisku "SDK"/"sádrokarton" nebo legendy. Zděné → pricky_material="zdene",
+   SDK → "sdk", nevíš-li jistě → null.
 3c. GARÁŽ / VEDLEJŠÍ NEVYTÁPĚNÉ PROSTORY — VÝSLOVNĚ ZKONTROLUJ (častá chyba = vynechání!):
    Projdi celý výkres a zjisti, jestli je SOUČÁSTÍ domu UZAVŘENÁ garáž, technická místnost nebo
    dílna OHRANIČENÁ STĚNAMI (poznáš podle popisku „garáž/technická/dílna", garážových vrat,
@@ -86,8 +90,12 @@ POSTUP:
    terasa NEMAJÍ obvodové zdivo → NEzapočítávej je do žádné délky stěn. Garáž = stěny ANO;
    carport/terasa = stěny NE. Když garáž ani vedlejší
    prostor není, ma_garaz=false. Buď upřímný, že délky jsou odhad.
-   GARÁŽOVÁ VRATA NEpočítej mezi okna ani dveře — kalkulace je řeší zvlášť přes ma_garaz
-   (překlad velkého rozponu i odpočet plochy vrat).
+   GARÁŽOVÁ VRATA NEpočítej mezi okna ani dveře — kalkulace je řeší zvlášť (překlad
+   velkého rozponu i odpočet plochy vrat). ROZLIŠUJ DVĚ věci: ma_garaz=true znamená
+   "k domu patří uzavřený vedlejší prostor" (garáž/technická/kolna, jejich stěny jsou
+   v délkách). ma_garazova_vrata=true dej JEN když na výkresu VIDÍŠ garážová vrata
+   (široký otvor ~2,4-5 m do garáže, symbol vrat / auto UVNITŘ místnosti se stěnami).
+   Technická místnost nebo kolna s běžnými dveřmi vrata NEMÁ → ma_garazova_vrata=false.
 4. TLOUŠŤKA ZDIVA — POZOR, klíčové: urči tloušťku samotné NOSNÉ TVÁRNICE / CIHLY
    (zdiva), NE celé skladby stěny vč. zateplení. Pokud je obvodová stěna SLOŽENÁ
    (např. "OBVODOVÁ STĚNA tl. 500 mm = YTONG Standard 300 + tepelná izolace 200 mm"),
@@ -100,6 +108,13 @@ POSTUP:
    a nastav tloustka_z_koty=true. POZOR: pokud je obvodová stěna ŠRAFOVANÁ (křížkové
    šrafy = složená stěna s izolací) a kóta je velká (450-550 mm), je to nejspíš
    ZDIVO+ZATEPLENÍ — odhadni tloušťku samotného zdiva (~300-375) a ma_zateplenie=true.
+   ALE POZOR NA OPAK: tlustá stěna 440-500 mm může být i JEDNOVRSTVÝ tepelněizolační
+   blok BEZ zateplení (Porotherm 44 EKO, Ytong Lambda…) — tečkovaná/hustá textura
+   v šrafuře nemusí být izolace, kreslí se tak i samotný blok. Zateplení tvrdíš
+   (ma_zateplenie=true) jen když vidíš SAMOSTATNOU vrstvu izolace nebo popis; když
+   skladbu z výkresu nelze rozhodnout, dej ma_zateplenie=false a zmiň to v note.
+   VŽDY vyplň i stena_celkova_mm = CELKOVÁ tloušťka obvodové stěny z kóty (vč. případné
+   izolace/omítek) — kalkulace z ní počítá variantu "plné zdivo" přesně.
 4b. MATERIÁL OBVODOVÉHO ZDIVA (je-li v dokumentu uveden — je to NEJSPOLEHLIVĚJŠÍ údaj, VYTĚŽ ho):
    Specifikace materiálu může být KDEKOLIV a JAKKOLIV zapsaná — legenda materiálů, skladba stěny,
    popiska/odkaz u stěny, tabulka, technická zpráva, poznámka. Čti VÝZNAMOVĚ: pochop, z ČEHO je
@@ -119,15 +134,24 @@ POSTUP:
 5. PLOCHA (důležité pro cross-check): Pokud jsou u místností popsané plochy
    (např. "Obývací pokoj 43,56 m²", "Ložnice 12,26 m²"), SEČTI je všechny do
    uzitna_plocha_m2 a vrať i jejich seznam. Terasu/balkon do užitné NEpočítej.
+   VOID/GALERIE: otevřený prostor do patra ("otevřeno do 2.NP", galerie nad obývákem,
+   čárkovaný otvor ve stropě u schodiště) NENÍ podlahová plocha horního podlaží —
+   do ploch místností patra ho NEpočítej.
    Zastavěnou plochu vezmi z parametrů, nebo odhadni z vnějšího obrysu (šířka×délka).
    Když je oficiální užitná/zastavěná uvedena v popisu, použij ji.
 6. Spočítej okna a dveře (i odhadem). Okna/dveře poznáš podle přerušení ve stěně
    se symbolem otevírání (oblouk) nebo podle šířkové kóty otvoru (800, 900, 2150…).
+   POZOR na ROHOVÁ okna ("rohové napojení"): když prosklení končí přesně na rohu
+   budovy a na kolmé fasádě hned za rohem pokračuje další, je to nejspíš JEDNO okno
+   přes roh — šířky obou ramen sečti a počítej jako jeden kus (jinak šířku podceníš).
    Do pocet_dveri počítej VŠECHNY dveře VČETNĚ vchodových (vchod se v kalkulaci
    rozlišuje automaticky). Garážová vrata do počtů NEpatří (viz 3c).
 6b. OTVORY JEDNOTLIVĚ (přesnější odpočet stěny + překlady podle rozponu): pokud jdou
    ŠÍŘKY otvorů vyčíst (šířkové kóty u otvorů, např. 900/1200/2400, nebo VÝPIS OKEN
-   A DVEŘÍ), vyplň seznam "otvory" — položky {"typ", "sirka_m", "pocet"}:
+   A DVEŘÍ), vyplň seznam "otvory" — položky {"typ", "sirka_m", "vyska_m", "pocet"}:
+   "vyska_m" = VÝŠKA otvoru v metrech, pokud je čitelná (kóta "šířka/výška", zápis
+   "2 150 / 2600 (0)" = šířka 2150, výška 2600, parapet 0, nebo výpis prvků) — jinak
+   vyska_m vynech (dosadí se typická výška daného typu).
    typ = "okno" | "francouzske_okno" (okno až na zem) | "hs_portal" (velké posuvné
    prosklení) | "dvere_vchod" | "dvere_vnitrni". Šířky v METRECH. Co spolehlivě
    nevyčteš, do seznamu NEdávej — seznam smí být i prázdný (kalkulace pak použije
@@ -138,9 +162,15 @@ POSTUP:
 7. SCHODIŠTĚ: je na půdorysu schodiště (stupně, šipka nahoru/dolů, "S" značka)? Pokud ano,
    dům má skoro jistě víc podlaží (nebo podkroví/sklep) → ma_schodiste=true. To je signál,
    že počítat jen 1 podlaží by bylo podcenění.
+   KÓTA SCHODIŠTĚ: bývá zapsaná jako "16 × 280 × 187" nebo "19 × 176 × 250" = počet
+   stupňů × (šířka × výška) NEBO (výška × šířka) stupně — výška stupně je ta hodnota
+   v rozmezí ~150-200 mm. Vyplň schodiste_stupne a schodiste_vyska_stupne_mm.
 8. VÝŠKA PODLAŽÍ: pokud je k dispozici ŘEZ domu nebo výšková kóta, dej do vyska_podlazi_m
    KONSTRUKČNÍ výšku podlaží (podlaha–podlaha, např. 3,0 m). Máš-li jen SVĚTLOU výšku
    místnosti (např. 2,6 m), přičti ~0,4 m na strop+podlahu a uveď to v note.
+   NEJSPOLEHLIVĚJŠÍ zdroj z půdorysu je SCHODIŠTĚ: konstrukční výška = počet stupňů ×
+   výška stupně (např. 16×187 = 2,99 m). Když úrovňová kóta (+2,800) NESEDÍ se součinem
+   ze schodiště, věř schodišti — je to aritmetika, kóty úrovní bývají zaokrouhlené/chybné.
    Když výšku nevidíš, nech null (dosadí se typická) a NEZVYŠUJ kvůli tomu confidence.
 
 Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
@@ -150,8 +180,9 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "obvod_m": <číslo>,
   "rozmery_celkove_m": {"sirka_m": <celková šířka domu z hlavní kóty>, "dlzka_m": <celková délka>} nebo null,
   "obvod_tloustka_mm": <číslo>,
+  "stena_celkova_mm": <CELKOVÁ tloušťka obvodové stěny z kóty (vč. izolace/omítek), nebo null>,
   "tloustka_z_koty": <true/false — je tloušťka NOSNÉ TVÁRNICE dána výslovně (kóta tloušťky NEBO typ tvárnice v legendě, např. "Ytong 300")? true jen pokud to vidíš; jinak false (vizuální odhad)>,
-  "ma_zateplenie": <true/false — je u obvodové stěny uvedena samostatná vrstva tepelné izolace / zateplení?>,
+  "ma_zateplenie": <true/false — je u obvodové stěny VIDITELNÁ samostatná vrstva tepelné izolace / zateplení? (jednovrstvý blok bez izolace = false)>,
   "obvod_material": <string: materiál obvodového zdiva přečtený z dokumentu (legenda/skladba/popis), nebo null>,
   "obvod_material_trieda": "lacne" | "stredne" | "drahe" | null,
   "zdivo_zdroj": "legenda" | "kóta" | "odhad",
@@ -159,14 +190,18 @@ Vrať POUZE validní JSON (žádný text okolo), přesně v tomto schématu:
   "vnitrni_nosne_tloustka_mm": <číslo nebo null>,
   "pricky_m": <číslo>,
   "pricky_tloustka_mm": <číslo>,
+  "pricky_material": "zdene" | "sdk" | null   (SDK = sádrokartonové příčky, nejsou zdivo),
   "plochy_mistnosti_m2": [<plochy jednotlivých místností které vidíš>],
   "uzitna_plocha_m2": <součet ploch místností, nebo oficiální údaj, nebo null>,
   "zastavena_plocha_m2": <číslo nebo null>,
   "pocet_podlazi": <číslo nebo null>,
   "ma_schodiste": <true/false — je na půdorysu schodiště (= dům má pravděpodobně víc podlaží)?>,
+  "schodiste_stupne": <počet stupňů schodiště z kóty (např. "16 × 280 × 187" → 16), nebo null>,
+  "schodiste_vyska_stupne_mm": <výška stupně v mm z kóty (hodnota ~150-200, např. 187), nebo null>,
   "ma_garaz": <true/false — je součástí domu garáž / technická místnost / dílna / vedlejší nevytápěná část? (jsou-li, jejich stěny MUSÍ být v délkách zahrnuty)>,
+  "ma_garazova_vrata": <true/false — jsou na výkresu GARÁŽOVÁ VRATA (široký otvor do garáže)? technická místnost s běžnými dveřmi = false>,
   "vyska_podlazi_m": <číslo nebo null>,
-  "otvory": [{"typ": "okno|francouzske_okno|hs_portal|dvere_vchod|dvere_vnitrni", "sirka_m": <číslo>, "pocet": <číslo>}, …]   (jen otvory s vyčtenou šířkou; smí být []),
+  "otvory": [{"typ": "okno|francouzske_okno|hs_portal|dvere_vchod|dvere_vnitrni", "sirka_m": <číslo>, "vyska_m": <číslo, jen je-li výška čitelná — jinak vynech>, "pocet": <číslo>}, …]   (jen otvory s vyčtenou šířkou; smí být []),
   "pocet_oken": <číslo nebo null — BEZ garážových vrat>,
   "pocet_dveri": <číslo nebo null — všechny dveře VČETNĚ vchodových, BEZ garážových vrat>,
   "pocet_mistnosti": <číslo nebo null>,
@@ -192,15 +227,20 @@ EXTRACTION_SCHEMA = {
         "rozmery_celkove_m": {"type": ["object", "null"], "properties": {
             "sirka_m": {"type": "number"}, "dlzka_m": {"type": "number"}}},
         "obvod_tloustka_mm": _NUM,
+        "stena_celkova_mm": _NUM,
         "tloustka_z_koty": _BOOL, "ma_zateplenie": _BOOL,
         "obvod_material": {"type": ["string", "null"]},
         "obvod_material_trieda": {"type": ["string", "null"], "enum": ["lacne", "stredne", "drahe", None]},
         "zdivo_zdroj": {"type": "string", "enum": ["legenda", "kóta", "odhad"]},
         "vnitrni_nosne_m": _NUM, "vnitrni_nosne_tloustka_mm": _NUM,
         "pricky_m": _NUM, "pricky_tloustka_mm": _NUM,
+        "pricky_material": {"type": ["string", "null"], "enum": ["zdene", "sdk", None]},
         "plochy_mistnosti_m2": {"type": "array", "items": {"type": "number"}},
         "uzitna_plocha_m2": _NUM, "zastavena_plocha_m2": _NUM,
-        "pocet_podlazi": _NUM, "ma_schodiste": _BOOL, "ma_garaz": _BOOL,
+        "pocet_podlazi": _NUM, "ma_schodiste": _BOOL,
+        "schodiste_stupne": _NUM, "schodiste_vyska_stupne_mm": _NUM,
+        "ma_garaz": _BOOL,
+        "ma_garazova_vrata": {"type": ["boolean", "null"]},
         "vyska_podlazi_m": _NUM,
         "otvory": {"type": "array", "items": {
             "type": "object",
@@ -208,6 +248,7 @@ EXTRACTION_SCHEMA = {
                 "typ": {"type": "string", "enum": ["okno", "francouzske_okno", "hs_portal",
                                                     "dvere_vchod", "dvere_vnitrni"]},
                 "sirka_m": {"type": "number"},
+                "vyska_m": {"type": ["number", "null"]},
                 "pocet": {"type": "integer"},
             },
             "required": ["typ", "sirka_m", "pocet"],
@@ -455,8 +496,9 @@ def _extract_once(images, page_idx, n_pages) -> dict:
 
 
 # polia zlučované mediánom pri self-consistency (numerické, nezávislé od seba)
-_MEDIAN_FIELDS = ("obvod_m", "obvod_tloustka_mm", "vnitrni_nosne_m", "vnitrni_nosne_tloustka_mm",
-                  "pricky_m", "pricky_tloustka_mm", "uzitna_plocha_m2", "zastavena_plocha_m2",
+_MEDIAN_FIELDS = ("obvod_m", "obvod_tloustka_mm", "stena_celkova_mm", "vnitrni_nosne_m",
+                  "vnitrni_nosne_tloustka_mm", "pricky_m", "pricky_tloustka_mm",
+                  "uzitna_plocha_m2", "zastavena_plocha_m2", "vyska_podlazi_m",
                   "pocet_oken", "pocet_dveri", "pocet_mistnosti", "confidence_0_100")
 
 
@@ -473,6 +515,9 @@ def _median_merge(results: list) -> dict:
     base["obvod_m"] = round(med_obvod, 1)
     for k in ("ma_zateplenie", "ma_garaz", "ma_schodiste", "tloustka_z_koty"):
         base[k] = sum(1 for r in results if r.get(k)) > len(results) / 2
+    # vráta: väčšina spomedzi behov, ktoré sa vyjadrili (None = nevyjadril sa)
+    votes = [r.get("ma_garazova_vrata") for r in results if r.get("ma_garazova_vrata") is not None]
+    base["ma_garazova_vrata"] = (sum(votes) > len(votes) / 2) if votes else None
     base["_usage"] = {"in": sum(r["_usage"]["in"] for r in results),
                       "out": sum(r["_usage"]["out"] for r in results)}
     base["_model"] = f"{base.get('_model', '?')} ×{len(results)} (medián)"
@@ -500,7 +545,8 @@ def _normalize(d: dict) -> dict:
     if not uzit and rooms:
         uzit = round(sum(rooms), 1)
     d["uzitna_plocha_m2"] = uzit
-    # itemizované otvory: validuj typ aj šírku (0.3–6 m), zvyšok zahoď (pricing má fallback)
+    # itemizované otvory: validuj typ aj šírku (0.3–6 m), zvyšok zahoď (pricing má fallback);
+    # výška otvoru voliteľná (0.4–3.5 m) — mimo rozsahu ju zahoď, pricing dosadí typickú
     otvory = []
     for o in (d.get("otvory") or []):
         if not isinstance(o, dict):
@@ -508,11 +554,27 @@ def _normalize(d: dict) -> dict:
         typ, s = o.get("typ"), _num(o.get("sirka_m"))
         if typ in ("okno", "francouzske_okno", "hs_portal", "dvere_vchod", "dvere_vnitrni") \
                 and s and 0.3 <= s <= 6.0:
-            otvory.append({"typ": typ, "sirka_m": round(s, 2),
-                           "pocet": max(1, int(_num(o.get("pocet"), 1) or 1))})
+            item = {"typ": typ, "sirka_m": round(s, 2),
+                    "pocet": max(1, int(_num(o.get("pocet"), 1) or 1))}
+            v = _num(o.get("vyska_m"))
+            if v and 0.4 <= v <= 3.5:
+                item["vyska_m"] = round(v, 2)
+            otvory.append(item)
     # BBOX CHECK (deterministický, bez AI): obvod pravouhlého polygónu NEMÔŽE byť menší
     # než perimeter bounding boxu 2×(šírka+dĺžka). Chytá podčítané L/U tvary — hlavný
     # zdroj chýb obvodu v baseline (−16 až −24 %). L-tvar má obvod PRESNE = bbox perimeter.
+    # VÝŠKA ZO SCHODISKA (deterministicky, bez AI): konštrukčná výška = stupne × výška
+    # stupňa. Aritmetika z kóty schodiska je spoľahlivejšia než úrovňové kóty (+2,800 pri
+    # reálnych 2,99 m; test Fable 2026-07-07 dom 1) aj než default 2,8. Pri konflikte
+    # > 0,15 m vyhráva schodisko.
+    vyska = _num(d.get("vyska_podlazi_m"))
+    stupne = _num(d.get("schodiste_stupne"))
+    v_stupna = _num(d.get("schodiste_vyska_stupne_mm"))
+    vyska_zdroj = "výkres" if vyska else "default"
+    if stupne and v_stupna and 8 <= stupne <= 30 and 140 <= v_stupna <= 210:
+        v_calc = round(stupne * v_stupna / 1000, 2)
+        if 2.3 <= v_calc <= 4.2 and (not vyska or abs(v_calc - vyska) > 0.15):
+            vyska, vyska_zdroj = v_calc, "schodiště (stupně × výška)"
     bbox = d.get("rozmery_celkove_m") or {}
     bb_w, bb_l = _num(bbox.get("sirka_m")), _num(bbox.get("dlzka_m"))
     obvod = _num(d.get("obvod_m"), 0) or 0
@@ -532,6 +594,8 @@ def _normalize(d: dict) -> dict:
         "rozmery_celkove_m": ({"sirka_m": bb_w, "dlzka_m": bb_l} if bb_w and bb_l else None),
         "_obvod_bbox_fix": obvod_bbox_fix,
         "obvod_tloustka_mm": int(_num(d.get("obvod_tloustka_mm"), 300) or 300),
+        "stena_celkova_mm": (int(_num(d.get("stena_celkova_mm")))
+                             if _num(d.get("stena_celkova_mm")) else None),
         "tloustka_z_koty": bool(d.get("tloustka_z_koty")),
         "ma_zateplenie": bool(d.get("ma_zateplenie")),
         "obvod_material": d.get("obvod_material") or None,
@@ -542,13 +606,20 @@ def _normalize(d: dict) -> dict:
         "vnitrni_nosne_tloustka_mm": int(_num(d.get("vnitrni_nosne_tloustka_mm"), 250) or 250),
         "pricky_m": _num(d.get("pricky_m"), 0) or 0,
         "pricky_tloustka_mm": int(_num(d.get("pricky_tloustka_mm"), 100) or 100),
+        "pricky_material": (d.get("pricky_material")
+                            if d.get("pricky_material") in ("zdene", "sdk") else None),
         "uzitna_plocha_m2": _num(d.get("uzitna_plocha_m2")),
         "zastavena_plocha_m2": _num(d.get("zastavena_plocha_m2")),
         "plochy_mistnosti_m2": rooms,
         "pocet_podlazi": int(_num(d.get("pocet_podlazi"), 1) or 1),
         "ma_schodiste": bool(d.get("ma_schodiste")),
+        "schodiste_stupne": int(stupne) if stupne else None,
+        "schodiste_vyska_stupne_mm": int(v_stupna) if v_stupna else None,
         "ma_garaz": bool(d.get("ma_garaz")),
-        "vyska_podlazi_m": _num(d.get("vyska_podlazi_m"), 2.8) or 2.8,
+        "ma_garazova_vrata": (bool(d.get("ma_garazova_vrata"))
+                              if d.get("ma_garazova_vrata") is not None else None),
+        "vyska_podlazi_m": vyska or 2.8,
+        "_vyska_zdroj": vyska_zdroj,
         "otvory": otvory,
         "pocet_oken": int(_num(d.get("pocet_oken"), 0) or 0),
         "pocet_dveri": int(_num(d.get("pocet_dveri"), 0) or 0),
