@@ -8,6 +8,8 @@ Použitie:  python3 batch_test.py            # default vzorka
 import math
 import sys
 
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
 import extract
 
 # Gemini 3 Pro orientačné ceny (USD / 1M tokenov) – len pre odhad nákladu

@@ -1,4 +1,6 @@
 """Gate test: negatívne súbory MUSIA byť REFUSE, degradovaný NESMIE byť REFUSE."""
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
 import sys, extract, reconcile
 NEG = ["plan_49667100.jpg", "plan_49667101.jpg", "plan_49675097.jpg", "plan_49675098.jpg",
        "plan_49675099.jpg", "plan_49675100.jpg", "plan_49682792.jpg"]

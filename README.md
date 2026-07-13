@@ -46,15 +46,28 @@ python3 app.py                       # → http://localhost:5005
 - **Velikost uploadu:** Vercel má limit těla requestu ~4,5 MB — velké PDF zmenši.
 - **API klíče** nikdy do gitu (jsou v `.gitignore`); nastav je jen jako env na Vercelu.
 
-## Soubory
+## Struktura projektu
 
-| Runtime | Dev/test (mimo deploy) |
-|---------|------------------------|
-| app.py, config.py, extract.py, providers.py | batch_test.py, batch_ensemble.py |
-| pricing.py, reconcile.py | eval.py + ground_truth/ (merací etalón) |
-| claude_review.py, claude_vision.py | gate_test.py, threeway.py, cv_walls.py |
-| cihly.json, templates/app.html | shot.js (puppeteer screenshoty) |
-| api/index.py, requirements.txt | scrapers/, test_podorysy/, PLAN_PRESNOST.md, ZNALOSTI_ROZPOCTAR.md |
+```
+KOŘEN — runtime (jde do deploye na Vercel)
+├─ app.py                Flask server + agregace podlaží
+├─ extract.py            AI vízia → JSON  ·  providers.py  Gemini↔Claude přepínač
+├─ pricing.py            výkaz výměr + cena  ·  reconcile.py  quality gate
+├─ claude_review.py / claude_vision.py / komentar.py   Claude kontroly + komentář
+├─ config.py · cihly.json (ceník) · templates/app.html (React UI přes CDN, bez buildu)
+├─ api/index.py          Vercel WSGI entry  ·  vercel.json · requirements.txt
+│
+├─ eval.py               merací harness (MAPE vs ground_truth/, história eval_history/)
+├─ ground_truth/         etalón měření (16 výkresů)  ·  test_podorysy/  jpg vzorky
+│
+├─ testy/                gate_test.py · gate_test_refuse.py · batch_test.py
+│                        (spouštět z kořene: python3 testy/gate_test_refuse.py)
+├─ fable_testy/          manuální testy čtení půdorysů Fable modelem + verifikace vs PD
+├─ docs/                 STAV_PROJEKTU.md (RESUME!) · PLAN_PRESNOST.md
+│                        · ZNALOSTI_ROZPOCTAR.md · GUIDELINE_PODORYS.md
+├─ scrapers/ · shot.js   pomocné (scraping, puppeteer screenshoty)
+└─ test_projekty/        reálné PD na testování (NENÍ v gitu, ~128 MB)
+```
 
 > ⚠️ Orientační odhad, ceny bez DPH. „Hrubé zdivo" = obvod + nosné + příčky + překlady +
 > věnec + práce — **ne** celá hrubá stavba (viz cross-check). Před objednávkou ověř s rozpočtářem.

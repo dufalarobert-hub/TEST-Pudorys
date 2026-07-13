@@ -3,8 +3,7 @@ node_modules/
 package.json
 package-lock.json
 shot.js
-batch_test.py
-gate_test.py
+testy/
 scrapers/
 test_podorysy/
 uploads/
