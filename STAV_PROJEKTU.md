@@ -77,9 +77,10 @@ vs. reálne PD → zistenia implementované (NEcommitnuté, over a commitni):
 
 ## Kde sme skončili (commit 5dbea1d + gate_test_refuse.py)
 
-7 commitov refaktoru (ced429b..5dbea1d), **NEPUSHNUTÉ na main** (push = auto-deploy
-na Vercel test-pudorys.vercel.app — vedomé rozhodnutie počkať na overenie čísel).
-Záloha commitov: vetva `archiv/2026-07-07-refaktor` na GitHube.
+**2026-07-13: PUSHNUTÉ na main (e7800f1..377b015) a nasadené na Vercel** — Robert
+rozhodol pushnúť BEZ regresného evalu (beh bol prerušený). ⚠️ Regresný `eval.py --all`
++ `gate_test_refuse.py` teda STÁLE dlhujeme — čísla novej verzie nie sú overené proti
+baseline; spustiť pri najbližšej príležitosti (~24 volaní, ~4-5 Kč).
 
 **Hotové:**
 - Model-agnostická architektúra: `providers.py`, `EXTRACTOR_PROVIDER=gemini|anthropic`
